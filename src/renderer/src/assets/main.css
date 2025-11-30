@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+/* Ensure app fills the viewport and prevent global scrolling */
+html, body, #root {
+	height: 100%;
+	margin: 0;
+}
+
+/* Hide global scrollbar; internal areas (like items list) should handle scrolling */
+body {
+	overflow: hidden;
+}
+
+/* Ensure root element uses full height so App can size correctly */
+#root > div {
+	height: 100%;
+}
