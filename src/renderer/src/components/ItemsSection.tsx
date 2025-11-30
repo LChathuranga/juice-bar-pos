@@ -36,22 +36,18 @@ const items: Item[] = [
     // { id: '5', title: 'Citrus Mix', category: 'cold-press', price: '$5.00', image: greenDetox },
 ]
 
-import { useMemo, useState, useRef, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import NumberPadModal from './NumberPadModal'
 
-export default function ItemsSection({ filter, query, setQuery, onRequestAdd }: { filter: string; query?: string; setQuery?: (v: string) => void; onRequestAdd?: (item: Item, qty: number) => void }) {
-    const [localQuery, setLocalQuery] = useState('')
-    const effectiveQuery = typeof query === 'string' ? query : localQuery
+export default function ItemsSection({ filter, query, onRequestAdd }: { filter: string; query?: string; onRequestAdd?: (item: Item, qty: number) => void }) {
+    const effectiveQuery = query || ''
     const [selected, setSelected] = useState<Item | null>(null)
     const [pickQtyStr, setPickQtyStr] = useState<string>('1')
-    const [fresh, setFresh] = useState<boolean>(false)
-    const modalRef = useRef<HTMLDivElement | null>(null)
+    // fresh state handled inside NumberPadModal
 
     useEffect(() => {
         if (selected) {
             setPickQtyStr('1')
-            setFresh(true)
-            // focus modal to capture keyboard input
-            setTimeout(() => modalRef.current?.focus(), 0)
         }
     }, [selected])
 
@@ -82,55 +78,20 @@ export default function ItemsSection({ filter, query, setQuery, onRequestAdd }: 
                         </div>
                     </div>
                 ))}
-                    {selected && (
-                        <div className="fixed inset-0 z-40 flex items-center justify-center">
-                            <div className="absolute inset-0 bg-black opacity-40" onClick={() => setSelected(null)} />
-                            <div
-                                className="relative bg-white rounded-lg shadow-lg w-80 p-4 z-50"
-                                tabIndex={0}
-                                ref={modalRef}
-                                onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    const qty = Math.max(1, parseInt(pickQtyStr || '1', 10))
-                                    onRequestAdd?.(selected, qty)
-                                    setSelected(null)
-                                } else if (/^[0-9]$/.test(e.key)) {
-                                    const digit = e.key
-                                    setPickQtyStr((s) => (fresh ? digit : (s === '0' ? digit : s + digit)))
-                                    setFresh(false)
-                                } else if (e.key === 'Backspace') {
-                                    setPickQtyStr((s) => (s.length > 1 ? s.slice(0, -1) : '0'))
-                                    setFresh(false)
-                                }
-                            }}
-                            >
-                                    <div className="flex items-center gap-3">
-                                        {selected.image ? <img src={selected.image} alt={selected.title} className="w-16 h-16 object-cover rounded" /> : <div className="w-16 h-16 bg-gray-100 rounded" />}
-                                        <div>
-                                            <div className="font-semibold">{selected.title}</div>
-                                            <div className="text-sm text-gray-500">{selected.category} • {selected.price}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4">
-                                        <div className="text-center text-2xl font-mono">{pickQtyStr}</div>
-                                        <div className="grid grid-cols-3 gap-2 mt-3">
-                                            {[1,2,3,4,5,6,7,8,9].map((n) => (
-                                                <button key={n} className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setPickQtyStr((s) => (fresh ? String(n) : (s === '0' ? String(n) : s + String(n)))); setFresh(false) }}>{n}</button>
-                                            ))}
-                                            <button className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setPickQtyStr((s) => (s.length > 1 ? s.slice(0, -1) : '0')); setFresh(false) }}>⌫</button>
-                                            <button className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setPickQtyStr((s) => (fresh ? '0' : (s === '0' ? '0' : s + '0'))); setFresh(false) }}>0</button>
-                                            <button className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setPickQtyStr('1'); setFresh(true) }}>Clear</button>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4 flex justify-end gap-2">
-                                        <button className="px-3 py-2 rounded border" onClick={() => setSelected(null)}>Cancel</button>
-                                        <button className="px-4 py-2 bg-emerald-500 text-white rounded" onClick={() => { const qty = Math.max(1, parseInt(pickQtyStr || '1', 10)); onRequestAdd?.(selected, qty); setSelected(null) }}>Enter</button>
-                                    </div>
-                                </div>
-                        </div>
-                    )}
+                    <NumberPadModal
+                        visible={!!selected}
+                        title={selected ? `Add ${selected.title}` : undefined}
+                        value={pickQtyStr}
+                        onChange={setPickQtyStr}
+                        onCancel={() => setSelected(null)}
+                        onApply={() => {
+                            if (selected) {
+                                const qty = Math.max(1, parseInt(pickQtyStr || '1', 10))
+                                onRequestAdd?.(selected, qty)
+                            }
+                            setSelected(null)
+                        }}
+                    />
             </div>
         </section>
     )

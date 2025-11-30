@@ -1,15 +1,17 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { FiTrash2, FiPlus, FiMinus } from 'react-icons/fi'
+import NumberPadModal from './NumberPadModal'
 
 type OrderItem = { id: string; qty: number; title: string; price: number }
 
 export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems: OrderItem[]; setOrderItems: (v: OrderItem[]) => void }) {
 
   const subtotal = useMemo(() => orderItems.reduce((s, i) => s + i.qty * i.price, 0), [orderItems])
-  const [discountValue, setDiscountValue] = useState<number>(1.0)
+  const [discountValue, setDiscountValue] = useState<number>(0)
   const [discountType, setDiscountType] = useState<'fixed' | 'percent'>('fixed')
-  const [taxValue, setTaxValue] = useState<number>(2.1)
+  const [taxValue, setTaxValue] = useState<number>(0)
   const [showDiscountModal, setShowDiscountModal] = useState(false)
+  // const [showClearDiscountConfirm, setShowClearDiscountConfirm] = useState(false)
   const [modalDiscountValue, setModalDiscountValue] = useState<number>(discountValue)
   const [modalDiscountType, setModalDiscountType] = useState<'fixed' | 'percent'>(discountType)
   const [showTaxModal, setShowTaxModal] = useState(false)
@@ -178,20 +180,50 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
       <div className="mt-4 mt-auto border-t pt-3">
         <div className="space-y-3 text-sm">
           <div className="grid grid-cols-2 gap-2">
-            <div className="w-full px-3 py-2 bg-blue-500 text-white rounded text-sm flex items-center justify-between">
-              <div>
+            <div className="w-full px-3 py-2 bg-blue-500 text-white rounded text-sm">
+              <div className="flex items-center justify-between">
                 <div className="text-xs text-white/90">Discount</div>
                 <div className="font-semibold">{discountType === 'percent' ? `${discountValue}%` : `$${discountValue.toFixed(2)}`}</div>
               </div>
-              <button className="ml-3 px-2 py-1 bg-white/20 rounded text-xs" onClick={() => { setModalDiscountValue(discountValue); setModalDiscountType('percent'); setShowDiscountModal(true) }}>Edit</button>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs"
+                  onClick={() => { setDiscountValue(0); setDiscountType('fixed'); setModalDiscountStr('0') }}
+                  aria-label="Clear discount"
+                >
+                  Clear
+                </button>
+                <button
+                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs"
+                  onClick={() => { setModalDiscountValue(discountValue); setModalDiscountType('percent'); setShowDiscountModal(true) }}
+                  aria-label="Edit discount"
+                >
+                  Edit
+                </button>
+              </div>
             </div>
 
-            <div className="w-full px-3 py-2 bg-indigo-500 text-white rounded text-sm flex items-center justify-between">
-              <div>
+            <div className="w-full px-3 py-2 bg-indigo-500 text-white rounded text-sm">
+              <div className="flex items-center justify-between">
                 <div className="text-xs text-white/90">Tax</div>
                 <div className="font-semibold">${taxValue.toFixed(2)}</div>
               </div>
-              <button className="ml-3 px-2 py-1 bg-white/20 rounded text-xs" onClick={() => { setModalTaxValue(taxValue); setShowTaxModal(true) }}>Edit</button>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs"
+                  onClick={() => { setTaxValue(0); setModalTaxStr('0') }}
+                  aria-label="Clear tax"
+                >
+                  Clear
+                </button>
+                <button
+                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs"
+                  onClick={() => { setModalTaxValue(taxValue); setShowTaxModal(true) }}
+                  aria-label="Edit tax"
+                >
+                  Edit
+                </button>
+              </div>
             </div>
           </div>
 
@@ -216,68 +248,46 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
           </div>
         </div>
       </div>
-      {showDiscountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black opacity-40" onClick={() => setShowDiscountModal(false)} />
-          <div className="relative bg-white rounded p-4 w-96 z-50">
-            <h3 className="text-lg font-semibold mb-2">Set Discount</h3>
-            <div className="grid grid-cols-3 gap-2 items-center">
-              <label className="col-span-1 text-gray-600">Type</label>
-              <select className="col-span-2 p-1 rounded border" value={modalDiscountType} onChange={(e) => setModalDiscountType(e.target.value as any)}>
-                <option value="fixed">Fixed</option>
-                <option value="percent">%</option>
-              </select>
-            </div>
+      <NumberPadModal
+        visible={showDiscountModal}
+        title="Set Discount"
+        value={modalDiscountStr}
+        suffix={modalDiscountType === 'percent' ? '%' : ''}
+        onChange={setModalDiscountStr}
+        allowDecimal={false}
+        onCancel={() => setShowDiscountModal(false)}
+        onApply={() => {
+          let v = modalDiscountType === 'percent' ? parseInt(modalDiscountStr || '0', 10) : parseFloat(modalDiscountStr || '0')
+          if (modalDiscountType === 'percent') {
+            if (Number.isNaN(v)) v = 0
+            v = Math.max(0, Math.min(100, v))
+          } else {
+            if (Number.isNaN(v)) v = 0
+            v = Math.max(0, v)
+            // optionally cap fixed discount to subtotal
+            if (v > subtotal) v = subtotal
+          }
+          setDiscountValue(v)
+          setDiscountType(modalDiscountType)
+          setShowDiscountModal(false)
+        }}
+      />
+      <NumberPadModal
+        visible={showTaxModal}
+        title="Set Tax"
+        value={modalTaxStr}
+        onChange={setModalTaxStr}
+        allowDecimal={true}
+        onCancel={() => setShowTaxModal(false)}
+        onApply={() => {
+          let v = parseFloat(modalTaxStr || '0')
+          if (Number.isNaN(v)) v = 0
+          v = Math.max(0, v)
+          setTaxValue(v)
+          setShowTaxModal(false)
+        }}
+      />
 
-            <div className="mt-3">
-              <div className="text-center text-2xl font-mono">{modalDiscountStr}{modalDiscountType === 'percent' ? '%' : ''}</div>
-              <div className="grid grid-cols-3 gap-2 mt-3">
-                {[1,2,3,4,5,6,7,8,9].map(n => (
-                  <button key={n} className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setModalDiscountStr((s) => (modalDiscountFresh ? String(n) : (s === '0' ? String(n) : s + String(n)))); setModalDiscountFresh(false) }}>{n}</button>
-                ))}
-                <button className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setModalDiscountStr((s) => (s.length > 1 ? s.slice(0, -1) : '0')); setModalDiscountFresh(false) }}>⌫</button>
-                <button className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setModalDiscountStr((s) => (modalDiscountFresh ? '0' : (s === '0' ? '0' : s + '0'))); setModalDiscountFresh(false) }}>0</button>
-                <button className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setModalDiscountStr('1'); setModalDiscountFresh(true) }}>Clear</button>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-2">
-              <button className="px-3 py-2 rounded border" onClick={() => setShowDiscountModal(false)}>Cancel</button>
-              <button className="px-3 py-2 bg-emerald-500 text-white rounded" onClick={() => {
-                const v = modalDiscountType === 'percent' ? parseInt(modalDiscountStr || '0', 10) : parseFloat(modalDiscountStr || '0')
-                setDiscountValue(Number.isNaN(v) ? 0 : v)
-                setDiscountType(modalDiscountType)
-                setShowDiscountModal(false)
-              }}>Apply</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showTaxModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black opacity-40" onClick={() => setShowTaxModal(false)} />
-          <div className="relative bg-white rounded p-4 w-96 z-50">
-            <h3 className="text-lg font-semibold mb-2">Set Tax</h3>
-
-            <div className="mt-3">
-              <div className="text-center text-2xl font-mono">{modalTaxStr}</div>
-              <div className="grid grid-cols-3 gap-2 mt-3">
-                {[1,2,3,4,5,6,7,8,9].map(n => (
-                  <button key={n} className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setModalTaxStr((s) => (modalTaxFresh ? String(n) : (s === '0' ? String(n) : s + String(n)))); setModalTaxFresh(false) }}>{n}</button>
-                ))}
-                <button className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setModalTaxStr((s) => (s.length > 1 ? s.slice(0, -1) : '0')); setModalTaxFresh(false) }}>⌫</button>
-                <button className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setModalTaxStr((s) => (modalTaxFresh ? '0' : (s === '0' ? '0' : s + '0'))); setModalTaxFresh(false) }}>0</button>
-                <button className="p-3 bg-gray-100 rounded text-lg" onClick={() => { setModalTaxStr('0'); setModalTaxFresh(true) }}>Clear</button>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-2">
-              <button className="px-3 py-2 rounded border" onClick={() => setShowTaxModal(false)}>Cancel</button>
-              <button className="px-3 py-2 bg-emerald-500 text-white rounded" onClick={() => { const v = parseFloat(modalTaxStr || '0'); setTaxValue(Number.isNaN(v) ? 0 : v); setShowTaxModal(false) }}>Apply</button>
-            </div>
-          </div>
-        </div>
-      )}
     </aside>
   )
 }

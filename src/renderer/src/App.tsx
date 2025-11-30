@@ -32,7 +32,7 @@ function App(): React.JSX.Element {
                 />
               </div>
             </div>
-            <ItemsSection filter={category} query={query} setQuery={setQuery} onRequestAdd={(item, qty) => {
+            <ItemsSection filter={category} query={query} onRequestAdd={(item, qty) => {
               setOrderItems((prev) => {
                 const exists = prev.find((p) => p.id === item.id)
                 if (exists) return prev.map((p) => (p.id === item.id ? { ...p, qty: p.qty + qty } : p))
