@@ -28,8 +28,24 @@ const api = {
   updateCategory: (id: string, updates: any) => ipcRenderer.invoke('db:updateCategory', id, updates),
   deleteCategory: (id: string) => ipcRenderer.invoke('db:deleteCategory', id),
   
+  // Shop Settings operations
+  getShopSettings: () => ipcRenderer.invoke('db:getShopSettings'),
+  saveShopSettings: (settings: any) => ipcRenderer.invoke('db:saveShopSettings', settings),
+  
+  // Admin operations
+  getAllAdmins: () => ipcRenderer.invoke('db:getAllAdmins'),
+  createAdmin: (admin: any) => ipcRenderer.invoke('db:createAdmin', admin),
+  deleteAdmin: (id: string) => ipcRenderer.invoke('db:deleteAdmin', id),
+  changePassword: (username: string, currentPassword: string, newPassword: string) => 
+    ipcRenderer.invoke('db:changePassword', username, currentPassword, newPassword),
+  verifyAdmin: (username: string, password: string) => 
+    ipcRenderer.invoke('db:verifyAdmin', username, password),
+  
   // Image operations
   saveProductImage: (imageData: string, filename: string) => ipcRenderer.invoke('save-product-image', imageData, filename),
+  
+  // Print operations
+  printReceipt: (receiptData: any) => ipcRenderer.invoke('print-receipt', receiptData),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

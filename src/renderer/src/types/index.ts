@@ -20,6 +20,8 @@ export interface Order {
   total: number
   tax: number
   subtotal: number
+  discount: number
+  payment_method: string
   created_at: string
 }
 
@@ -51,4 +53,20 @@ export interface CartItem {
   title: string
   price: number
   qty: number
+}
+
+export interface ShopSettings {
+  id: number
+  name: string
+  logo: string
+  address: string
+  phone: string
+  updated_at: string
+}
+
+export interface Admin {
+  id: string
+  username: string
+  role: string
+  created_at: string
 }

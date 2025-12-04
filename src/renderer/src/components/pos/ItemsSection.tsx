@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect } from 'react'
 import NumberPadModal from './NumberPadModal'
-import { Product } from '../types'
+import { Product } from '../../types'
 
 const getImageUrl = (imageName: string) => {
-    return new URL(`../assets/images/${imageName}`, import.meta.url).href
+    return new URL(`../../assets/images/${imageName}`, import.meta.url).href
 }
 
 export default function ItemsSection({ filter, query, onRequestAdd }: { filter: string; query?: string; onRequestAdd?: (item: Product, qty: number) => void }) {

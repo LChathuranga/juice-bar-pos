@@ -128,6 +128,36 @@ app.whenReady().then(() => {
     return db.deleteCategory(id)
   })
 
+  // Shop Settings operations
+  ipcMain.handle('db:getShopSettings', () => {
+    return db.getShopSettings()
+  })
+
+  ipcMain.handle('db:saveShopSettings', (_, settings) => {
+    return db.saveShopSettings(settings)
+  })
+
+  // Admin operations
+  ipcMain.handle('db:getAllAdmins', () => {
+    return db.getAllAdmins()
+  })
+
+  ipcMain.handle('db:createAdmin', (_, admin) => {
+    return db.createAdmin(admin)
+  })
+
+  ipcMain.handle('db:deleteAdmin', (_, id: string) => {
+    return db.deleteAdmin(id)
+  })
+
+  ipcMain.handle('db:changePassword', (_, username: string, currentPassword: string, newPassword: string) => {
+    return db.updateAdminPassword(username, currentPassword, newPassword)
+  })
+
+  ipcMain.handle('db:verifyAdmin', (_, username: string, password: string) => {
+    return db.verifyAdmin(username, password)
+  })
+
   // Image operations
   ipcMain.handle('save-product-image', (_, imageData: string, filename: string) => {
     try {
@@ -152,6 +182,191 @@ app.whenReady().then(() => {
       console.error('Failed to save image:', error)
       return { success: false, error: String(error) }
     }
+  })
+
+  // Print operations
+  ipcMain.handle('print-receipt', async (_, receiptData) => {
+    return new Promise<void>(async (resolve, reject) => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (!win) {
+        reject(new Error('No focused window'))
+        return
+      }
+
+      // Get shop settings for receipt header
+      const shopSettings = db.getShopSettings()
+
+      // Create receipt HTML content
+      const receiptContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Receipt ${receiptData.orderNumber}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              font-family: 'Courier New', monospace;
+              max-width: 80mm;
+              margin: 0 auto;
+              padding: 5mm;
+              font-size: 12px;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 10px;
+              border-bottom: 2px dashed #000;
+              padding-bottom: 10px;
+            }
+            .header h1 {
+              margin: 0 0 5px 0;
+              font-size: 18px;
+            }
+            .header p {
+              margin: 2px 0;
+              font-size: 11px;
+            }
+            .order-info {
+              margin: 10px 0;
+              font-size: 11px;
+              line-height: 1.4;
+            }
+            .order-info div {
+              margin: 2px 0;
+            }
+            .items {
+              margin: 10px 0;
+              border-bottom: 1px dashed #000;
+              padding-bottom: 10px;
+            }
+            .item {
+              margin: 5px 0;
+              font-size: 11px;
+            }
+            .item-title {
+              font-weight: bold;
+            }
+            .item-details {
+              display: flex;
+              justify-content: space-between;
+              color: #666;
+            }
+            .totals {
+              margin-top: 10px;
+              font-size: 11px;
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              margin: 3px 0;
+            }
+            .total-row.grand {
+              font-weight: bold;
+              font-size: 13px;
+              margin-top: 8px;
+              padding-top: 8px;
+              border-top: 2px solid #000;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 15px;
+              padding-top: 10px;
+              border-top: 2px dashed #000;
+              font-size: 10px;
+              line-height: 1.4;
+            }
+            .footer p {
+              margin: 3px 0;
+            }
+            @page { 
+              margin: 0; 
+              size: 80mm auto; 
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${shopSettings.name || 'JUICE BAR POS'}</h1>
+            ${shopSettings.address ? `<p>${shopSettings.address}</p>` : '<p>Sri Lanka</p>'}
+            ${shopSettings.phone ? `<p>Tel: ${shopSettings.phone}</p>` : ''}
+          </div>
+          <div class="order-info">
+            <div>Order: ${receiptData.orderNumber}</div>
+            <div>Date: ${receiptData.date}</div>
+            <div>Payment: ${receiptData.paymentMethod}</div>
+          </div>
+          <div class="items">
+            ${receiptData.items.map(item => `
+              <div class="item">
+                <div class="item-title">${item.title}</div>
+                <div class="item-details">
+                  <span>${item.qty} x ${item.price.toFixed(2)}</span>
+                  <span>Rs. ${item.total.toFixed(2)}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="totals">
+            <div class="total-row">
+              <span>Subtotal:</span>
+              <span>Rs. ${receiptData.subtotal.toFixed(2)}</span>
+            </div>
+            ${receiptData.discount > 0 ? `
+            <div class="total-row">
+              <span>Discount:</span>
+              <span>- Rs. ${receiptData.discount.toFixed(2)}</span>
+            </div>` : ''}
+            ${receiptData.tax > 0 ? `
+            <div class="total-row">
+              <span>Tax:</span>
+              <span>Rs. ${receiptData.tax.toFixed(2)}</span>
+            </div>` : ''}
+            <div class="total-row grand">
+              <span>TOTAL:</span>
+              <span>Rs. ${receiptData.total.toFixed(2)}</span>
+            </div>
+          </div>
+          <div class="footer">
+            <p>Thank you for your purchase!</p>
+            <p>Please come again</p>
+          </div>
+        </body>
+        </html>
+      `
+
+      // Create a hidden window for printing
+      const printWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      })
+
+      printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(receiptContent)}`)
+
+      printWindow.webContents.on('did-finish-load', () => {
+        // Print silently to default printer
+        printWindow.webContents.print(
+          {
+            silent: true,
+            printBackground: true,
+            margins: {
+              marginType: 'none'
+            }
+          },
+          (success, errorType) => {
+            if (!success) {
+              console.error('Print failed:', errorType)
+              reject(new Error(`Print failed: ${errorType}`))
+            } else {
+              console.log('Print successful')
+              resolve()
+            }
+            printWindow.close()
+          }
+        )
+      })
+    })
   })
 
   // IPC test

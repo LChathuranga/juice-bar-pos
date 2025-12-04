@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { FiDollarSign, FiShoppingCart, FiTrendingUp, FiPackage } from 'react-icons/fi'
-import { Sale, TopProduct } from '../../types'
+import { Sale, TopProduct, Order } from '../../types'
 
 export default function SalesReport() {
   const [salesData, setSalesData] = useState<Sale[]>([])
   const [totalRevenue, setTotalRevenue] = useState<number>(0)
   const [totalOrders, setTotalOrders] = useState<number>(0)
   const [topProducts, setTopProducts] = useState<TopProduct[]>([])
+  const [recentOrders, setRecentOrders] = useState<Order[]>([])
+  const [displayedOrders, setDisplayedOrders] = useState<number>(8)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -16,23 +18,32 @@ export default function SalesReport() {
   const loadSalesData = async () => {
     try {
       setLoading(true)
-      const [sales, revenue, orders, top] = await Promise.all([
+      const [sales, revenue, orders, top, recent] = await Promise.all([
         window.api.getSalesReport(7),
         window.api.getTotalRevenue(7),
         window.api.getTotalOrders(7),
-        window.api.getTopProducts(5, 30)
+        window.api.getTopProducts(5, 30),
+        window.api.getOrders(50) // Load more orders than displayed
       ])
       
       setSalesData(sales)
       setTotalRevenue(revenue)
       setTotalOrders(orders)
       setTopProducts(top)
+      setRecentOrders(recent)
     } catch (error) {
       console.error('Failed to load sales data:', error)
     } finally {
       setLoading(false)
     }
   }
+
+  const handleLoadMore = () => {
+    setDisplayedOrders(prev => prev + 8)
+  }
+
+  const visibleOrders = recentOrders.slice(0, displayedOrders)
+  const hasMoreOrders = displayedOrders < recentOrders.length
 
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
   const activeProducts = new Set(salesData.map(s => s.product)).size
@@ -89,8 +100,76 @@ export default function SalesReport() {
       {/* Sales Table */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800">Recent Sales</h2>
-          <p className="text-gray-600 mt-1">Transaction history</p>
+          <h2 className="text-2xl font-bold text-gray-800">Recent Orders</h2>
+          <p className="text-gray-600 mt-1">Latest transactions with payment details</p>
+        </div>
+        <div className="p-6">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 text-gray-600 font-semibold">Order ID</th>
+                  <th className="text-left py-3 px-4 text-gray-600 font-semibold">Date</th>
+                  <th className="text-left py-3 px-4 text-gray-600 font-semibold">Payment</th>
+                  <th className="text-right py-3 px-4 text-gray-600 font-semibold">Subtotal</th>
+                  <th className="text-right py-3 px-4 text-gray-600 font-semibold">Discount</th>
+                  <th className="text-right py-3 px-4 text-gray-600 font-semibold">Tax</th>
+                  <th className="text-right py-3 px-4 text-gray-600 font-semibold">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-6 text-center text-gray-500">
+                      No orders available
+                    </td>
+                  </tr>
+                ) : (
+                  visibleOrders.map((order) => (
+                    <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4 font-mono text-gray-600">#{order.id.toString().padStart(6, '0')}</td>
+                      <td className="py-3 px-4 text-gray-600">{new Date(order.created_at).toLocaleString()}</td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          order.payment_method === 'cash' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {order.payment_method === 'cash' ? '💵 Cash' : '💳 Card'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-gray-600">Rs. {order.subtotal.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right text-red-600">
+                        {order.discount > 0 ? `- Rs. ${order.discount.toFixed(2)}` : '-'}
+                      </td>
+                      <td className="py-3 px-4 text-right text-gray-600">Rs. {order.tax.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right font-semibold text-green-600">
+                        Rs. {order.total.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {hasMoreOrders && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={handleLoadMore}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                Load More Orders
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Product Sales Table */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-800">Product Sales</h2>
+          <p className="text-gray-600 mt-1">Sales by product</p>
         </div>
         <div className="p-6">
           <div className="overflow-x-auto">

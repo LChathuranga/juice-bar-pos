@@ -15,6 +15,8 @@ interface Order {
   total: number
   tax: number
   subtotal: number
+  discount: number
+  payment_method: string
   created_at: string
 }
 
@@ -42,6 +44,22 @@ interface Category {
   updated_at: string
 }
 
+interface ShopSettings {
+  id: number
+  name: string
+  logo: string
+  address: string
+  phone: string
+  updated_at: string
+}
+
+interface Admin {
+  id: string
+  username: string
+  role: string
+  created_at: string
+}
+
 interface DatabaseAPI {
   // Product operations
   getAllProducts: () => Promise<Product[]>
@@ -55,6 +73,8 @@ interface DatabaseAPI {
     subtotal: number
     tax: number
     total: number
+    discount?: number
+    payment_method?: string
     items: Array<{
       product_id: string
       product_name: string
@@ -78,8 +98,31 @@ interface DatabaseAPI {
   updateCategory: (id: string, updates: Partial<Omit<Category, 'id' | 'created_at' | 'updated_at'>>) => Promise<Category>
   deleteCategory: (id: string) => Promise<void>
   
+  // Shop Settings operations
+  getShopSettings: () => Promise<ShopSettings>
+  saveShopSettings: (settings: Partial<Omit<ShopSettings, 'id' | 'updated_at'>>) => Promise<ShopSettings>
+  
+  // Admin operations
+  getAllAdmins: () => Promise<Admin[]>
+  createAdmin: (admin: { username: string; password: string; role: string }) => Promise<Admin>
+  deleteAdmin: (id: string) => Promise<void>
+  changePassword: (username: string, currentPassword: string, newPassword: string) => Promise<boolean>
+  verifyAdmin: (username: string, password: string) => Promise<boolean>
+  
   // Image operations
   saveProductImage: (imageData: string, filename: string) => Promise<{ success: boolean; filename?: string; error?: string }>
+  
+  // Print operations
+  printReceipt: (receiptData: {
+    orderNumber: string
+    date: string
+    paymentMethod: string
+    items: Array<{ title: string; qty: number; price: number; total: number }>
+    subtotal: number
+    discount: number
+    tax: number
+    total: number
+  }) => Promise<void>
 }
 
 declare global {

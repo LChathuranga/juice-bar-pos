@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { FiTrash2, FiPlus, FiMinus, FiCheck } from 'react-icons/fi'
-import { CartItem } from '../types'
-import NumberPadModal from './pos/NumberPadModal';
+import NumberPadModal from './NumberPadModal'
+import { CartItem } from '../../types'
 
 export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems: CartItem[]; setOrderItems: (v: CartItem[]) => void }) {
 

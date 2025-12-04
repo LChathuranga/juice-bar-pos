@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { FiLogOut } from 'react-icons/fi'
 import AdminSidebar from './AdminSidebar'
 import ProductManagement from './ProductManagement'
 import CategoryManagement from './CategoryManagement'
 import SalesReport from './SalesReport'
+import Settings from './Settings'
 
-export default function AdminView({ onBackToPOS }: { onBackToPOS: () => void }) {
+export default function AdminView({ onBackToPOS, onLogout }: { onBackToPOS: () => void; onLogout: () => void }) {
   const [activeSection, setActiveSection] = useState<string>('products')
 
   return (
@@ -16,12 +18,22 @@ export default function AdminView({ onBackToPOS }: { onBackToPOS: () => void }) 
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
             <span className="text-sm opacity-80">Juice Bar POS</span>
           </div>
-          <button
-            onClick={onBackToPOS}
-            className="px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-gray-100 transition-colors font-medium"
-          >
-            Back to POS
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBackToPOS}
+              className="px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+            >
+              Back to POS
+            </button>
+            <button
+              onClick={onLogout}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium flex items-center gap-2"
+              title="Logout"
+            >
+              <FiLogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -32,12 +44,7 @@ export default function AdminView({ onBackToPOS }: { onBackToPOS: () => void }) 
           {activeSection === 'products' && <ProductManagement />}
           {activeSection === 'sales' && <SalesReport />}
           {activeSection === 'categories' && <CategoryManagement />}
-          {activeSection === 'settings' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Settings</h2>
-              <p className="text-gray-600">Settings features coming soon...</p>
-            </div>
-          )}
+          {activeSection === 'settings' && <Settings />}
         </main>
       </div>
     </div>
