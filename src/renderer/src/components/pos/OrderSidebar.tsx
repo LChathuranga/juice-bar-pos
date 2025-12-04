@@ -2,11 +2,13 @@ import { useMemo, useState, useEffect, useRef } from 'react'
 import { FiTrash2, FiPlus, FiMinus, FiCheck } from 'react-icons/fi'
 import NumberPadModal from './NumberPadModal'
 import { CartItem } from '../../types'
+import { useShopSettings } from '../../hooks/useShopSettings'
 
 export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems: CartItem[]; setOrderItems: (v: CartItem[]) => void }) {
 
   const subtotal = useMemo(() => orderItems.reduce((s, i) => s + i.qty * i.price, 0), [orderItems])
-  const [shopName, setShopName] = useState('Juice Bar POS')
+  const { settings: shopSettings } = useShopSettings()
+  const shopName = shopSettings?.name || 'Juice Bar POS'
   const [discountValue, setDiscountValue] = useState<number>(0)
   const [discountType, setDiscountType] = useState<'fixed' | 'percent'>('fixed')
   const [taxValue, setTaxValue] = useState<number>(0)
@@ -50,21 +52,6 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
   useEffect(() => {
     modalDiscountTypeRef.current = modalDiscountType
   }, [modalDiscountType])
-
-  useEffect(() => {
-    // Load shop settings
-    const loadSettings = async () => {
-      try {
-        const settings = await window.api.getShopSettings()
-        if (settings) {
-          setShopName(settings.name)
-        }
-      } catch (error) {
-        console.error('Failed to load settings:', error)
-      }
-    }
-    loadSettings()
-  }, [])
 
   useEffect(() => {
     if (!showDiscountModal) return

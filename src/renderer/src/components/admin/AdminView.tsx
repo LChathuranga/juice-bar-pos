@@ -1,29 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { FiLogOut } from 'react-icons/fi'
 import AdminSidebar from './AdminSidebar'
 import ProductManagement from './ProductManagement'
 import CategoryManagement from './CategoryManagement'
 import SalesReport from './SalesReport'
 import Settings from './Settings'
+import { useShopSettings } from '../../hooks/useShopSettings'
 
 export default function AdminView({ onBackToPOS, onLogout }: { onBackToPOS: () => void; onLogout: () => void }) {
   const [activeSection, setActiveSection] = useState<string>('products')
-  const [shopName, setShopName] = useState('Juice Bar POS')
-
-  useEffect(() => {
-    loadShopSettings()
-  }, [])
-
-  const loadShopSettings = async () => {
-    try {
-      const settings = await window.api.getShopSettings()
-      if (settings && settings.name) {
-        setShopName(settings.name)
-      }
-    } catch (error) {
-      console.error('Failed to load shop settings:', error)
-    }
-  }
+  const { settings: shopSettings } = useShopSettings()
+  const shopName = shopSettings?.name || 'Juice Bar POS'
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">

@@ -1,5 +1,6 @@
 import { FiSettings, FiLogOut, FiClock, FiUser } from 'react-icons/fi'
 import { useState, useEffect } from 'react'
+import { useShopSettings } from '../../hooks/useShopSettings'
 
 export default function Header({ 
   onAdminClick, 
@@ -12,13 +13,12 @@ export default function Header({
   userRole?: string
   onLogout?: () => void
 }) {
-  const [shopName, setShopName] = useState('Fresh Squeeze')
-  const [shopLogo, setShopLogo] = useState('')
+  const { settings: shopSettings } = useShopSettings()
+  const shopName = shopSettings?.name || 'Fresh Squeeze'
+  const shopLogo = shopSettings?.logo || ''
   const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
-    loadShopSettings()
-    
     // Update time every second
     const timer = setInterval(() => {
       setCurrentTime(new Date())
@@ -26,23 +26,6 @@ export default function Header({
 
     return () => clearInterval(timer)
   }, [])
-
-  const loadShopSettings = async () => {
-    try {
-      const settings = await window.api.getShopSettings()
-      if (settings) {
-        if (settings.name) {
-          setShopName(settings.name)
-        }
-        // Logo is stored as base64 data URL
-        if (settings.logo) {
-          setShopLogo(settings.logo)
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load shop settings:', error)
-    }
-  }
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
