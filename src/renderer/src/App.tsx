@@ -14,7 +14,6 @@ function App(): React.JSX.Element {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
   const [currentUser, setCurrentUser] = useState<string>('')
   const [userRole, setUserRole] = useState<string>('')
-  const [loginMode, setLoginMode] = useState<'pos' | 'admin'>('pos')
 
   const [orderItems, setOrderItems] = useState<CartItem[]>([])
 
@@ -29,7 +28,7 @@ function App(): React.JSX.Element {
         setIsAuthenticated(true)
         setCurrentUser(result.username || username)
         setUserRole(result.role || 'cashier')
-        setViewMode(loginMode)
+        setViewMode('pos')
         // Store current logged in username for password changes
         sessionStorage.setItem('currentUser', result.username || username)
         return true
@@ -42,20 +41,11 @@ function App(): React.JSX.Element {
   }
 
   const handleAdminClick = () => {
-    // If cashier, prompt to re-login as admin
+    // Only allow admin users to access admin panel
     if (userRole !== 'admin') {
-      if (confirm('You need to login with an admin account to access the admin panel. Would you like to logout and login as admin?')) {
-        setIsAuthenticated(false)
-        setCurrentUser('')
-        setUserRole('')
-        setViewMode('pos')
-        setLoginMode('admin') // Set to admin mode before logout
-        sessionStorage.removeItem('currentUser')
-      }
+      alert('Access denied. Only administrators can access the admin panel.')
       return
     }
-    // If already admin, just switch to admin view
-    setLoginMode('admin')
     setViewMode('admin')
   }
 
@@ -64,13 +54,12 @@ function App(): React.JSX.Element {
     setCurrentUser('')
     setUserRole('')
     setViewMode('pos')
-    setLoginMode('pos') // Reset login mode to POS
     sessionStorage.removeItem('currentUser')
   }
 
   // Show login screen if not authenticated
   if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} mode={loginMode} />
+    return <Login onLogin={handleLogin} />
   }
 
   // If in admin mode, show admin view
@@ -82,7 +71,7 @@ function App(): React.JSX.Element {
   return (
     <>
       <Header 
-        onAdminClick={handleAdminClick} 
+        onAdminClick={userRole === 'admin' ? handleAdminClick : undefined}
         currentUser={currentUser}
         userRole={userRole}
         onLogout={handleLogout} 

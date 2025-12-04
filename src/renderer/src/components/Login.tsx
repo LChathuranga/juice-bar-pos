@@ -1,16 +1,24 @@
-import { useState } from 'react'
-import { FiLock, FiUser, FiShoppingCart } from 'react-icons/fi'
+import { useState, useEffect, useRef } from 'react'
+import { FiLock, FiUser } from 'react-icons/fi'
 
 interface LoginProps {
   onLogin: (username: string, password: string) => Promise<boolean>
-  mode?: 'pos' | 'admin'
 }
 
-export default function Login({ onLogin, mode = 'pos' }: LoginProps) {
+export default function Login({ onLogin }: LoginProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const usernameRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    // Focus the username field when component mounts
+    const timer = setTimeout(() => {
+      usernameRef.current?.focus()
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,24 +39,14 @@ export default function Login({ onLogin, mode = 'pos' }: LoginProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
         <div className="text-center mb-8">
-          <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br ${mode === 'admin' ? 'from-purple-500 to-pink-600' : 'from-green-500 to-emerald-600'} mb-4`}>
-            {mode === 'admin' ? (
-              <FiLock className="w-10 h-10 text-white" />
-            ) : (
-              <FiShoppingCart className="w-10 h-10 text-white" />
-            )}
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 mb-4">
+            <FiLock className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            {mode === 'admin' ? 'Admin Login' : 'POS Login'}
-          </h1>
-          <p className="text-gray-600">
-            {mode === 'admin' 
-              ? 'Enter your credentials to access the admin panel' 
-              : 'Enter your credentials to start using the POS system'}
-          </p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Login</h1>
+          <p className="text-gray-600">Enter your credentials to continue</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -63,12 +61,12 @@ export default function Login({ onLogin, mode = 'pos' }: LoginProps) {
               <input
                 id="username"
                 type="text"
+                ref={usernameRef}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                 placeholder="Enter your username"
                 required
-                autoFocus
               />
             </div>
           </div>
@@ -102,7 +100,7 @@ export default function Login({ onLogin, mode = 'pos' }: LoginProps) {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full bg-gradient-to-r ${mode === 'admin' ? 'from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700' : 'from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'} text-white py-3 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
