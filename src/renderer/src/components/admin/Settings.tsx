@@ -6,6 +6,7 @@ interface NewAdmin {
   username: string
   password: string
   confirmPassword: string
+  role: 'admin' | 'cashier'
 }
 
 interface PasswordForm {
@@ -27,7 +28,7 @@ export default function Settings() {
   const [admins, setAdmins] = useState<Admin[]>([])
   const [showAddAdmin, setShowAddAdmin] = useState(false)
   const [showChangePassword, setShowChangePassword] = useState(false)
-  const [newAdmin, setNewAdmin] = useState<NewAdmin>({ username: '', password: '', confirmPassword: '' })
+  const [newAdmin, setNewAdmin] = useState<NewAdmin>({ username: '', password: '', confirmPassword: '', role: 'cashier' })
   const [passwordForm, setPasswordForm] = useState<PasswordForm>({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [logoPreview, setLogoPreview] = useState<string>('')
   const [saving, setSaving] = useState(false)
@@ -104,28 +105,28 @@ export default function Settings() {
       await window.api.createAdmin({
         username: newAdmin.username,
         password: newAdmin.password,
-        role: 'admin'
+        role: newAdmin.role
       })
-      setMessage({ type: 'success', text: 'Admin added successfully!' })
-      setNewAdmin({ username: '', password: '', confirmPassword: '' })
+      setMessage({ type: 'success', text: `${newAdmin.role === 'admin' ? 'Admin' : 'Cashier'} added successfully!` })
+      setNewAdmin({ username: '', password: '', confirmPassword: '', role: 'cashier' })
       setShowAddAdmin(false)
       loadAdmins()
       setTimeout(() => setMessage(null), 3000)
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to add admin' })
+      setMessage({ type: 'error', text: error.message || 'Failed to add user' })
     }
   }
 
-  const handleDeleteAdmin = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this admin?')) return
+  const handleDeleteAdmin = async (id: string, username: string) => {
+    if (!confirm(`Are you sure you want to delete ${username}?`)) return
     
     try {
       await window.api.deleteAdmin(id)
-      setMessage({ type: 'success', text: 'Admin deleted successfully!' })
+      setMessage({ type: 'success', text: 'User deleted successfully!' })
       loadAdmins()
       setTimeout(() => setMessage(null), 3000)
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to delete admin' })
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to delete user' })
     }
   }
 
@@ -232,7 +233,7 @@ export default function Settings() {
             >
               <div className="flex items-center gap-2">
                 <FiUser className="w-5 h-5" />
-                Admin Users
+                Users & Cashiers
               </div>
             </button>
             <button
@@ -353,13 +354,13 @@ export default function Settings() {
           {activeTab === 'admins' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-800">Admin Accounts</h3>
+                <h3 className="text-lg font-semibold text-gray-800">User Accounts</h3>
                 <button
                   onClick={() => setShowAddAdmin(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   <FiPlus className="w-5 h-5" />
-                  Add Admin
+                  Add User
                 </button>
               </div>
 
@@ -367,25 +368,29 @@ export default function Settings() {
                 {admins.map((admin) => (
                   <div key={admin.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                        <FiUser className="w-6 h-6 text-purple-600" />
+                      <div className={`w-12 h-12 rounded-full ${admin.role === 'admin' ? 'bg-purple-100' : 'bg-green-100'} flex items-center justify-center`}>
+                        <FiUser className={`w-6 h-6 ${admin.role === 'admin' ? 'text-purple-600' : 'text-green-600'}`} />
                       </div>
                       <div>
                         <h4 className="font-semibold text-gray-800">{admin.username}</h4>
-                        <p className="text-sm text-gray-500">Role: {admin.role}</p>
+                        <p className="text-sm text-gray-500">
+                          Role: <span className={`font-medium ${admin.role === 'admin' ? 'text-purple-600' : 'text-green-600'}`}>
+                            {admin.role === 'admin' ? 'Admin' : 'Cashier'}
+                          </span>
+                        </p>
                       </div>
                     </div>
                     <button
-                      onClick={() => handleDeleteAdmin(admin.id)}
+                      onClick={() => handleDeleteAdmin(admin.id, admin.username)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete admin"
+                      title="Delete user"
                     >
                       <FiTrash2 className="w-5 h-5" />
                     </button>
                   </div>
                 ))}
                 {admins.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">No admin accounts found</div>
+                  <div className="text-center py-8 text-gray-500">No user accounts found</div>
                 )}
               </div>
 
@@ -393,8 +398,24 @@ export default function Settings() {
               {showAddAdmin && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">Add New Admin</h3>
+                    <h3 className="text-xl font-bold text-gray-800 mb-4">Add New User</h3>
                     <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                        <select
+                          value={newAdmin.role}
+                          onChange={(e) => setNewAdmin(prev => ({ ...prev, role: e.target.value as 'admin' | 'cashier' }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                        >
+                          <option value="cashier">Cashier</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {newAdmin.role === 'admin' 
+                            ? 'Admins have full access to all features' 
+                            : 'Cashiers can only access the POS system'}
+                        </p>
+                      </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
                         <input
@@ -412,7 +433,7 @@ export default function Settings() {
                           value={newAdmin.password}
                           onChange={(e) => setNewAdmin(prev => ({ ...prev, password: e.target.value }))}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                          placeholder="Enter password"
+                          placeholder="Enter password (min 6 characters)"
                         />
                       </div>
                       <div>
@@ -428,7 +449,10 @@ export default function Settings() {
                     </div>
                     <div className="flex gap-3 mt-6">
                       <button
-                        onClick={() => setShowAddAdmin(false)}
+                        onClick={() => {
+                          setShowAddAdmin(false)
+                          setNewAdmin({ username: '', password: '', confirmPassword: '', role: 'cashier' })
+                        }}
                         className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         Cancel
@@ -437,7 +461,7 @@ export default function Settings() {
                         onClick={handleAddAdmin}
                         className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                       >
-                        Add Admin
+                        Add {newAdmin.role === 'admin' ? 'Admin' : 'Cashier'}
                       </button>
                     </div>
                   </div>

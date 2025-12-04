@@ -12,7 +12,9 @@ function App(): React.JSX.Element {
   const [query, setQuery] = useState<string>('')
   const [viewMode, setViewMode] = useState<'pos' | 'admin'>('pos')
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
-  const [showLogin, setShowLogin] = useState<boolean>(false)
+  const [currentUser, setCurrentUser] = useState<string>('')
+  const [userRole, setUserRole] = useState<string>('')
+  const [loginMode, setLoginMode] = useState<'pos' | 'admin'>('pos')
 
   const [orderItems, setOrderItems] = useState<CartItem[]>([])
 
@@ -22,13 +24,14 @@ function App(): React.JSX.Element {
 
   const handleLogin = async (username: string, password: string): Promise<boolean> => {
     try {
-      const isValid = await window.api.verifyAdmin(username, password)
-      if (isValid) {
+      const result = await window.api.verifyAdmin(username, password)
+      if (result.valid) {
         setIsAuthenticated(true)
-        setShowLogin(false)
-        setViewMode('admin')
+        setCurrentUser(result.username || username)
+        setUserRole(result.role || 'cashier')
+        setViewMode(loginMode)
         // Store current logged in username for password changes
-        sessionStorage.setItem('currentUser', username)
+        sessionStorage.setItem('currentUser', result.username || username)
         return true
       }
       return false
@@ -39,26 +42,35 @@ function App(): React.JSX.Element {
   }
 
   const handleAdminClick = () => {
-    if (isAuthenticated) {
-      setViewMode('admin')
-    } else {
-      setShowLogin(true)
+    // If cashier, prompt to re-login as admin
+    if (userRole !== 'admin') {
+      if (confirm('You need to login with an admin account to access the admin panel. Would you like to logout and login as admin?')) {
+        setIsAuthenticated(false)
+        setCurrentUser('')
+        setUserRole('')
+        setViewMode('pos')
+        setLoginMode('admin') // Set to admin mode before logout
+        sessionStorage.removeItem('currentUser')
+      }
+      return
     }
+    // If already admin, just switch to admin view
+    setLoginMode('admin')
+    setViewMode('admin')
   }
 
   const handleLogout = () => {
     setIsAuthenticated(false)
+    setCurrentUser('')
+    setUserRole('')
     setViewMode('pos')
+    setLoginMode('pos') // Reset login mode to POS
     sessionStorage.removeItem('currentUser')
   }
 
-  const handleCancelLogin = () => {
-    setShowLogin(false)
-  }
-
-  // Show login screen if requested
-  if (showLogin && !isAuthenticated) {
-    return <Login onLogin={handleLogin} onCancel={handleCancelLogin} />
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} mode={loginMode} />
   }
 
   // If in admin mode, show admin view
@@ -69,13 +81,17 @@ function App(): React.JSX.Element {
   // Otherwise show POS view
   return (
     <>
-      <Header onAdminClick={handleAdminClick} />
+      <Header 
+        onAdminClick={handleAdminClick} 
+        currentUser={currentUser}
+        userRole={userRole}
+        onLogout={handleLogout} 
+      />
       <div className="flex gap-6 h-[calc(100vh-64px)] bg-gray-200">
         <Sidebar active={category} onSelect={setCategory} />
         <main className="flex-1 pt-6 overflow-hidden">
           <div className="h-full overflow-auto">
-            <div className="px-6 mb-6 flex justify-between gap-3">
-              <span className="inline-block text-sm px-3 py-1 rounded bg-white shadow text-gray-600">Category: {category}</span>
+            <div className="px-6 mb-6 flex justify-end gap-3">
               <div className="flex-1 max-w-md">
                 <input
                   value={query}

@@ -108,7 +108,7 @@ interface DatabaseAPI {
   createAdmin: (admin: { username: string; password: string; role: string }) => Promise<Admin>
   deleteAdmin: (id: string) => Promise<void>
   changePassword: (username: string, currentPassword: string, newPassword: string) => Promise<boolean>
-  verifyAdmin: (username: string, password: string) => Promise<boolean>
+  verifyAdmin: (username: string, password: string) => Promise<{ valid: boolean; role?: string; username?: string }>
   
   // Migration/Reset operations
   clearAllTables: () => Promise<void>

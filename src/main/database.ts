@@ -538,15 +538,20 @@ export function deleteAdmin(id: string): void {
   db.prepare('DELETE FROM admins WHERE id = ?').run(id)
 }
 
-export function verifyAdmin(username: string, password: string): boolean {
+export function verifyAdmin(username: string, password: string): { valid: boolean; role?: string; username?: string } {
   const admin = getAdminByUsername(username)
   if (!admin) {
-    return false
+    return { valid: false }
   }
 
   const crypto = require('crypto')
   const hash = crypto.createHash('sha256').update(password).digest('hex')
-  return admin.password === hash
+  const isValid = admin.password === hash
+  
+  if (isValid) {
+    return { valid: true, role: admin.role, username: admin.username }
+  }
+  return { valid: false }
 }
 
 // Migration/Reset operations

@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { FiLock, FiUser, FiX } from 'react-icons/fi'
+import { FiLock, FiUser, FiShoppingCart } from 'react-icons/fi'
 
 interface LoginProps {
   onLogin: (username: string, password: string) => Promise<boolean>
-  onCancel?: () => void
+  mode?: 'pos' | 'admin'
 }
 
-export default function Login({ onLogin, onCancel }: LoginProps) {
+export default function Login({ onLogin, mode = 'pos' }: LoginProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -33,21 +33,22 @@ export default function Login({ onLogin, onCancel }: LoginProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
-        {onCancel && (
-          <button
-            onClick={onCancel}
-            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-            title="Cancel"
-          >
-            <FiX className="w-5 h-5" />
-          </button>
-        )}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
-            <FiLock className="w-10 h-10 text-white" />
+          <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br ${mode === 'admin' ? 'from-purple-500 to-pink-600' : 'from-green-500 to-emerald-600'} mb-4`}>
+            {mode === 'admin' ? (
+              <FiLock className="w-10 h-10 text-white" />
+            ) : (
+              <FiShoppingCart className="w-10 h-10 text-white" />
+            )}
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Admin Login</h1>
-          <p className="text-gray-600">Enter your credentials to access the admin panel</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            {mode === 'admin' ? 'Admin Login' : 'POS Login'}
+          </h1>
+          <p className="text-gray-600">
+            {mode === 'admin' 
+              ? 'Enter your credentials to access the admin panel' 
+              : 'Enter your credentials to start using the POS system'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -101,7 +102,7 @@ export default function Login({ onLogin, onCancel }: LoginProps) {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className={`w-full bg-gradient-to-r ${mode === 'admin' ? 'from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700' : 'from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'} text-white py-3 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
           >
             {isLoading ? (
               <>
