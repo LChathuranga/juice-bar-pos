@@ -63,6 +63,9 @@ interface DatabaseAPI {
   getTotalRevenue: (days?: number) => Promise<number>
   getTotalOrders: (days?: number) => Promise<number>
   getTopProducts: (limit?: number, days?: number) => Promise<Array<{ product: string; quantity: number; revenue: number }>>
+  
+  // Image operations
+  saveProductImage: (imageData: string, filename: string) => Promise<{ success: boolean; filename?: string; error?: string }>
 }
 
 declare global {

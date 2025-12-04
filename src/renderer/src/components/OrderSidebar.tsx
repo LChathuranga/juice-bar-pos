@@ -169,7 +169,7 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
               <div key={it.id} className="flex items-center justify-between py-2 border-b border-gray-100">
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{it.title}</div>
-                  <div className="text-xs text-gray-500">{it.qty} x {(it.price).toFixed(2)}</div>
+                  <div className="text-xs text-gray-500">{it.qty} x Rs. {(it.price).toFixed(2)}</div>
                 </div>
 
                 <div className="flex items-center gap-2 ml-3">
@@ -192,7 +192,7 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
                     </button>
                   </div>
 
-                  <div className="text-sm font-semibold w-20 text-right">${(it.qty * it.price).toFixed(2)}</div>
+                  <div className="text-sm font-semibold w-20 text-right">Rs. {(it.qty * it.price).toFixed(2)}</div>
 
                   <button
                     className="text-red-500 hover:text-red-700 text-sm p-1 rounded"
@@ -215,7 +215,7 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
             <div className="w-full px-3 py-2 bg-blue-500 text-white rounded text-sm">
               <div className="flex items-center justify-between">
                 <div className="text-xs text-white/90">Discount</div>
-                <div className="font-semibold">{discountType === 'percent' ? `${discountValue}%` : `$${discountValue.toFixed(2)}`}</div>
+                <div className="font-semibold">{discountType === 'percent' ? `${discountValue}%` : `Rs. ${discountValue.toFixed(2)}`}</div>
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <button
@@ -238,7 +238,7 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
             <div className="w-full px-3 py-2 bg-indigo-500 text-white rounded text-sm">
               <div className="flex items-center justify-between">
                 <div className="text-xs text-white/90">Tax</div>
-                <div className="font-semibold">${taxValue.toFixed(2)}</div>
+                <div className="font-semibold">Rs. {taxValue.toFixed(2)}</div>
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <button
@@ -262,20 +262,20 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
           <div className="border-t pt-2">
             <div className="flex items-center justify-between text-sm">
               <div>Subtotal</div>
-              <div>${subtotal.toFixed(2)}</div>
+              <div>Rs. {subtotal.toFixed(2)}</div>
             </div>
             <div className="flex items-center justify-between text-sm">
               <div>Discount</div>
-              <div>- ${discountAmount.toFixed(2)}</div>
+              <div>- Rs. {discountAmount.toFixed(2)}</div>
             </div>
             <div className="flex items-center justify-between text-sm">
               <div>Tax</div>
-              <div>${taxValue.toFixed(2)}</div>
+              <div>Rs. {taxValue.toFixed(2)}</div>
             </div>
           </div>
 
           <div className="mt-3">
-            <div className="bg-green-600 text-white text-center py-3 rounded font-bold text-xl">TOTAL: ${total.toFixed(2)}</div>
+            <div className="bg-green-600 text-white text-center py-3 rounded font-bold text-xl">TOTAL: Rs. {total.toFixed(2)}</div>
             <button 
               className="w-full mt-3 py-3 bg-emerald-500 text-white font-bold rounded hover:bg-emerald-600 transition-colors"
               onClick={handleCompleteSale}

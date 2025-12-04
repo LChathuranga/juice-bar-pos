@@ -66,7 +66,7 @@ export default function SalesReport() {
             <h3 className="text-sm font-medium opacity-90">Total Revenue</h3>
             <FiDollarSign className="w-8 h-8 opacity-80" />
           </div>
-          <p className="text-3xl font-bold">${totalRevenue.toFixed(2)}</p>
+          <p className="text-3xl font-bold">Rs. {totalRevenue.toFixed(2)}</p>
           <p className="text-sm opacity-80 mt-1">Last 7 days</p>
         </div>
 
@@ -84,7 +84,7 @@ export default function SalesReport() {
             <h3 className="text-sm font-medium opacity-90">Avg. Order Value</h3>
             <FiTrendingUp className="w-8 h-8 opacity-80" />
           </div>
-          <p className="text-3xl font-bold">${avgOrderValue.toFixed(2)}</p>
+          <p className="text-3xl font-bold">Rs. {avgOrderValue.toFixed(2)}</p>
           <p className="text-sm opacity-80 mt-1">Per transaction</p>
         </div>
 
@@ -129,7 +129,7 @@ export default function SalesReport() {
                       <td className="py-3 px-4 font-medium text-gray-800">{sale.product}</td>
                       <td className="py-3 px-4 text-center text-gray-600">{sale.quantity}</td>
                       <td className="py-3 px-4 text-right font-semibold text-green-600">
-                        ${sale.revenue.toFixed(2)}
+                        Rs. {sale.revenue.toFixed(2)}
                       </td>
                     </tr>
                   ))
@@ -163,7 +163,7 @@ export default function SalesReport() {
                     <p className="text-sm text-gray-600">{item.quantity} units sold</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-green-600">${item.revenue.toFixed(2)}</p>
+                    <p className="font-bold text-green-600">Rs. {item.revenue.toFixed(2)}</p>
                     <p className="text-sm text-gray-500">Revenue</p>
                   </div>
                 </div>

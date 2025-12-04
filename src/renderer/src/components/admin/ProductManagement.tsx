@@ -22,7 +22,22 @@ export default function ProductManagement() {
   const [formData, setFormData] = useState({ title: '', category: 'cold-press', price: '' })
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState<string>('green.jpg')
+  const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      // Create preview URL
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   useEffect(() => {
     loadProducts()
@@ -44,6 +59,7 @@ export default function ProductManagement() {
     setEditingProduct(null)
     setFormData({ title: '', category: 'cold-press', price: '' })
     setSelectedImage('green.jpg')
+    setImageFile(null)
     setImagePreview(null)
     setShowModal(true)
   }
@@ -56,6 +72,7 @@ export default function ProductManagement() {
       price: product.price.toString()
     })
     setSelectedImage(product.image || 'green.jpg')
+    setImageFile(null)
     setImagePreview(null)
     setShowModal(true)
   }
@@ -72,17 +89,91 @@ export default function ProductManagement() {
     }
   }
 
+  const handleToggleSelect = (id: string) => {
+    const newSelected = new Set(selectedProducts)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedProducts(newSelected)
+  }
+
+  const handleSelectAll = () => {
+    if (selectedProducts.size === products.length) {
+      setSelectedProducts(new Set())
+    } else {
+      setSelectedProducts(new Set(products.map(p => p.id)))
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedProducts.size === 0) {
+      alert('No products selected')
+      return
+    }
+
+    if (confirm(`Are you sure you want to delete ${selectedProducts.size} product(s)?`)) {
+      try {
+        await Promise.all(
+          Array.from(selectedProducts).map(id => window.api.deleteProduct(id))
+        )
+        setSelectedProducts(new Set())
+        await loadProducts()
+      } catch (error) {
+        console.error('Failed to delete products:', error)
+        alert('Failed to delete products')
+      }
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    if (products.length === 0) {
+      alert('No products to delete')
+      return
+    }
+
+    if (confirm(`Are you sure you want to delete ALL ${products.length} product(s)? This cannot be undone!`)) {
+      try {
+        await Promise.all(
+          products.map(p => window.api.deleteProduct(p.id))
+        )
+        setSelectedProducts(new Set())
+        await loadProducts()
+      } catch (error) {
+        console.error('Failed to delete all products:', error)
+        alert('Failed to delete all products')
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     try {
+      let imageName = selectedImage
+      
+      // If user uploaded a new image, save it
+      if (imageFile && imagePreview) {
+        const ext = imageFile.name.split('.').pop()
+        imageName = `${Date.now()}.${ext}`
+        
+        // Save image to assets/images folder via IPC
+        const result = await window.api.saveProductImage(imagePreview, imageName)
+        
+        if (!result.success) {
+          alert('Failed to save image: ' + result.error)
+          return
+        }
+      }
+      
       if (editingProduct) {
         // Update existing product
         await window.api.updateProduct(editingProduct.id, {
           title: formData.title,
           category: formData.category,
           price: parseFloat(formData.price),
-          image: selectedImage
+          image: imageName
         })
       } else {
         // Add new product
@@ -91,7 +182,7 @@ export default function ProductManagement() {
           title: formData.title,
           category: formData.category,
           price: parseFloat(formData.price),
-          image: selectedImage
+          image: imageName
         })
       }
       
@@ -99,6 +190,7 @@ export default function ProductManagement() {
       setShowModal(false)
       setFormData({ title: '', category: 'cold-press', price: '' })
       setSelectedImage('green.jpg')
+      setImageFile(null)
       setImagePreview(null)
     } catch (error) {
       console.error('Failed to save product:', error)
@@ -120,14 +212,37 @@ export default function ProductManagement() {
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Product Management</h2>
           <p className="text-gray-600 mt-1">Manage your menu items</p>
+          {selectedProducts.size > 0 && (
+            <p className="text-sm text-purple-600 mt-1">{selectedProducts.size} product(s) selected</p>
+          )}
         </div>
-        <button
-          onClick={handleAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-        >
-          <FiPlus className="w-5 h-5" />
-          Add Product
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedProducts.size > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <FiTrash2 className="w-5 h-5" />
+              Delete Selected ({selectedProducts.size})
+            </button>
+          )}
+          {products.length > 0 && (
+            <button
+              onClick={handleDeleteAll}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            >
+              <FiTrash2 className="w-5 h-5" />
+              Delete All
+            </button>
+          )}
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <FiPlus className="w-5 h-5" />
+            Add Product
+          </button>
+        </div>
       </div>
 
       <div className="p-6">
@@ -153,6 +268,14 @@ export default function ProductManagement() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 text-gray-600 font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={products.length > 0 && selectedProducts.size === products.length}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                    />
+                  </th>
                   <th className="text-left py-3 px-4 text-gray-600 font-semibold">Image</th>
                   <th className="text-left py-3 px-4 text-gray-600 font-semibold">Product Name</th>
                   <th className="text-left py-3 px-4 text-gray-600 font-semibold">Category</th>
@@ -164,9 +287,22 @@ export default function ProductManagement() {
                 {products.map((product) => (
                 <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-3 px-4">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200">
-                      {product.image && (
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.has(product.id)}
+                      onChange={() => handleToggleSelect(product.id)}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                    />
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+                      {product.image ? (
                         <img src={getImageUrl(product.image)} alt={product.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M20.5,8.5c-1.333,0-2.5-0.5-3.5-1.5c-1,1-2.167,1.5-3.5,1.5S11,8,10,7C9,8,7.833,8.5,6.5,8.5S4,8,3,7v11c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V7C20,8,19.167,8.5,20.5,8.5z M7,17H5v-2h2V17z M7,13H5v-2h2V13z M11,17H9v-2h2V17z M11,13H9v-2h2V13z M15,17h-2v-2h2V17z M15,13h-2v-2h2V13z M19,17h-2v-2h2V17z M19,13h-2v-2h2V13z" opacity=".3"/>
+                          <path d="M3,2v4c1,1,2,1.5,3.5,1.5S9,7,10,6c1,1,2.5,1.5,4,1.5s3-0.5,4-1.5c1,1,2,1.5,3.5,1.5S23,7,24,6V2H3z M19,20H5V9c-1.667,0-3,0.667-4,2v11c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V11c-1,1.333-2.333,2-4,2V20z"/>
+                        </svg>
                       )}
                     </div>
                   </td>
@@ -176,7 +312,7 @@ export default function ProductManagement() {
                       {product.category}
                     </span>
                   </td>
-                  <td className="py-3 px-4 font-semibold text-gray-800">${product.price.toFixed(2)}</td>
+                  <td className="py-3 px-4 font-semibold text-gray-800">Rs. {product.price.toFixed(2)}</td>
                   <td className="py-3 px-4">
                     <div className="flex gap-2 justify-end">
                       <button
@@ -256,13 +392,13 @@ export default function ProductManagement() {
                     Price
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-2 text-gray-500">$</span>
+                    <span className="absolute left-4 top-2 text-gray-500">Rs.</span>
                     <input
                       type="number"
                       step="0.01"
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       placeholder="0.00"
                       required
                     />
@@ -273,39 +409,59 @@ export default function ProductManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Product Image
                   </label>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedImage('green.jpg')}
-                      className={`flex-1 p-3 border-2 rounded-lg transition-all ${
-                        selectedImage === 'green.jpg'
-                          ? 'border-purple-600 bg-purple-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      <div className="aspect-square rounded bg-gray-100 mb-2 overflow-hidden">
-                        <img src={getImageUrl('green.jpg')} alt="Green" className="w-full h-full object-cover" />
+                  <div className="space-y-3">
+                    {imagePreview ? (
+                      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100 border-2 border-purple-600">
+                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFile(null)
+                            setImagePreview(null)
+                          }}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        >
+                          <FiX className="w-4 h-4" />
+                        </button>
                       </div>
-                      <span className="text-xs font-medium">Green</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedImage('berry.jpg')}
-                      className={`flex-1 p-3 border-2 rounded-lg transition-all ${
-                        selectedImage === 'berry.jpg'
-                          ? 'border-purple-600 bg-purple-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      <div className="aspect-square rounded bg-gray-100 mb-2 overflow-hidden">
-                        <img src={getImageUrl('berry.jpg')} alt="Berry" className="w-full h-full object-cover" />
+                    ) : editingProduct && editingProduct.image ? (
+                      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-300">
+                        <img src={getImageUrl(editingProduct.image)} alt="Current" className="w-full h-full object-cover" />
                       </div>
-                      <span className="text-xs font-medium">Berry</span>
-                    </button>
+                    ) : (
+                      <div className="w-full aspect-video rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                        <div className="text-center text-gray-400">
+                          <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-sm">No image selected</p>
+                        </div>
+                      </div>
+                    )}
+                    <label className="block">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        id="image-upload"
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span className="text-sm font-medium text-gray-700">
+                          {imagePreview ? 'Change Image' : 'Upload Image'}
+                        </span>
+                      </label>
+                    </label>
+                    <p className="text-xs text-gray-500">
+                      Select an image from your computer (JPG, PNG, GIF, WebP)
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Select an image for your product
-                  </p>
                 </div>
               </div>
 

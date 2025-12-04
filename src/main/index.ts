@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
+import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import * as db from './database'
@@ -104,6 +105,32 @@ app.whenReady().then(() => {
 
   ipcMain.handle('db:getTopProducts', (_, limit?: number, days?: number) => {
     return db.getTopProducts(limit, days)
+  })
+
+  // Image operations
+  ipcMain.handle('save-product-image', (_, imageData: string, filename: string) => {
+    try {
+      // Get the path to the renderer's assets/images folder
+      const imagesPath = is.dev 
+        ? join(__dirname, '../../src/renderer/src/assets/images')
+        : join(process.resourcesPath, 'app.asar.unpacked/src/renderer/src/assets/images')
+      
+      // Create directory if it doesn't exist
+      if (!existsSync(imagesPath)) {
+        mkdirSync(imagesPath, { recursive: true })
+      }
+
+      // Convert base64 to buffer and save
+      const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '')
+      const buffer = Buffer.from(base64Data, 'base64')
+      const filePath = join(imagesPath, filename)
+      
+      writeFileSync(filePath, buffer)
+      return { success: true, filename }
+    } catch (error) {
+      console.error('Failed to save image:', error)
+      return { success: false, error: String(error) }
+    }
   })
 
   // IPC test

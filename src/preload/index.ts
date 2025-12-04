@@ -20,6 +20,9 @@ const api = {
   getTotalRevenue: (days?: number) => ipcRenderer.invoke('db:getTotalRevenue', days),
   getTotalOrders: (days?: number) => ipcRenderer.invoke('db:getTotalOrders', days),
   getTopProducts: (limit?: number, days?: number) => ipcRenderer.invoke('db:getTopProducts', limit, days),
+  
+  // Image operations
+  saveProductImage: (imageData: string, filename: string) => ipcRenderer.invoke('save-product-image', imageData, filename),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
