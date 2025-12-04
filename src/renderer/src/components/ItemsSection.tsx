@@ -1,23 +1,16 @@
-type Item = {
-    id: string
-    title: string
-    category: string
-    price: number
-    image?: string
-}
+import { useMemo, useState, useEffect } from 'react'
+import NumberPadModal from './NumberPadModal'
+import { Product } from '../types'
 
 const getImageUrl = (imageName: string) => {
     return new URL(`../assets/images/${imageName}`, import.meta.url).href
 }
 
-import { useMemo, useState, useEffect } from 'react'
-import NumberPadModal from './NumberPadModal'
-
-export default function ItemsSection({ filter, query, onRequestAdd }: { filter: string; query?: string; onRequestAdd?: (item: Item, qty: number) => void }) {
+export default function ItemsSection({ filter, query, onRequestAdd }: { filter: string; query?: string; onRequestAdd?: (item: Product, qty: number) => void }) {
     const effectiveQuery = query || ''
-    const [selected, setSelected] = useState<Item | null>(null)
+    const [selected, setSelected] = useState<Product | null>(null)
     const [pickQtyStr, setPickQtyStr] = useState<string>('1')
-    const [items, setItems] = useState<Item[]>([])
+    const [items, setItems] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     // fresh state handled inside NumberPadModal
 

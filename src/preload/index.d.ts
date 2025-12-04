@@ -35,6 +35,13 @@ interface Sale {
   revenue: number
 }
 
+interface Category {
+  id: string
+  name: string
+  created_at: string
+  updated_at: string
+}
+
 interface DatabaseAPI {
   // Product operations
   getAllProducts: () => Promise<Product[]>
@@ -63,6 +70,13 @@ interface DatabaseAPI {
   getTotalRevenue: (days?: number) => Promise<number>
   getTotalOrders: (days?: number) => Promise<number>
   getTopProducts: (limit?: number, days?: number) => Promise<Array<{ product: string; quantity: number; revenue: number }>>
+  
+  // Category operations
+  getAllCategories: () => Promise<Category[]>
+  getCategoryById: (id: string) => Promise<Category | undefined>
+  createCategory: (category: Omit<Category, 'created_at' | 'updated_at'>) => Promise<Category>
+  updateCategory: (id: string, updates: Partial<Omit<Category, 'id' | 'created_at' | 'updated_at'>>) => Promise<Category>
+  deleteCategory: (id: string) => Promise<void>
   
   // Image operations
   saveProductImage: (imageData: string, filename: string) => Promise<{ success: boolean; filename?: string; error?: string }>

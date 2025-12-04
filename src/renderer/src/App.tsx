@@ -4,13 +4,14 @@ import OrderSidebar from './components/OrderSidebar'
 import AdminView from './components/admin/AdminView'
 import { useState } from 'react'
 import ItemsSection from './components/ItemsSection'
+import { CartItem } from './types'
 
 function App(): React.JSX.Element {
   const [category, setCategory] = useState<string>('all')
   const [query, setQuery] = useState<string>('')
   const [viewMode, setViewMode] = useState<'pos' | 'admin'>('pos')
 
-  const [orderItems, setOrderItems] = useState<{ id: string; qty: number; title: string; price: number }[]>([])
+  const [orderItems, setOrderItems] = useState<CartItem[]>([])
 
   // debug: log category changes
   // eslint-disable-next-line no-console

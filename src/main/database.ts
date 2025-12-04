@@ -14,6 +14,13 @@ export interface Product {
   updated_at: string
 }
 
+export interface Category {
+  id: string
+  name: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Order {
   id: number
   total: number
@@ -48,6 +55,13 @@ export function initDatabase(): Database.Database {
 
   // Create tables
   db.exec(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS products (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -55,7 +69,8 @@ export function initDatabase(): Database.Database {
       price REAL NOT NULL,
       image TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (category) REFERENCES categories(id)
     );
 
     CREATE TABLE IF NOT EXISTS orders (
@@ -86,10 +101,29 @@ export function initDatabase(): Database.Database {
   // Seed initial data if products table is empty
   const count = db.prepare('SELECT COUNT(*) as count FROM products').get() as { count: number }
   if (count.count === 0) {
+    seedInitialCategories(db)
     seedInitialData(db)
   }
 
   return db
+}
+
+function seedInitialCategories(database: Database.Database): void {
+  const insertCategory = database.prepare(`
+    INSERT INTO categories (id, name)
+    VALUES (?, ?)
+  `)
+
+  const categories = [
+    { id: 'cold-press', name: 'Cold Press' },
+    { id: 'smoothies', name: 'Smoothies' },
+    { id: 'shots', name: 'Shots' },
+    { id: 'add-ons', name: 'Add-Ons' }
+  ]
+
+  for (const category of categories) {
+    insertCategory.run(category.id, category.name)
+  }
 }
 
 function seedInitialData(database: Database.Database): void {
@@ -270,6 +304,50 @@ export function getTopProducts(limit = 5, days = 30): Array<{ product: string; q
     LIMIT ?
   `
   return db.prepare(query).all(days, limit) as Array<{ product: string; quantity: number; revenue: number }>
+}
+
+// Category operations
+export function getAllCategories(): Category[] {
+  const db = getDatabase()
+  return db.prepare('SELECT * FROM categories ORDER BY name').all() as Category[]
+}
+
+export function getCategoryById(id: string): Category | undefined {
+  const db = getDatabase()
+  return db.prepare('SELECT * FROM categories WHERE id = ?').get(id) as Category | undefined
+}
+
+export function createCategory(category: Omit<Category, 'created_at' | 'updated_at'>): Category {
+  const db = getDatabase()
+  db.prepare(`
+    INSERT INTO categories (id, name)
+    VALUES (?, ?)
+  `).run(category.id, category.name)
+  return getCategoryById(category.id)!
+}
+
+export function updateCategory(id: string, updates: Partial<Omit<Category, 'id' | 'created_at' | 'updated_at'>>): Category {
+  const db = getDatabase()
+  const fields: string[] = []
+  const values: any[] = []
+
+  if (updates.name !== undefined) {
+    fields.push('name = ?')
+    values.push(updates.name)
+  }
+
+  if (fields.length > 0) {
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(id)
+    db.prepare(`UPDATE categories SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+  }
+
+  return getCategoryById(id)!
+}
+
+export function deleteCategory(id: string): void {
+  const db = getDatabase()
+  db.prepare('DELETE FROM categories WHERE id = ?').run(id)
 }
 
 export function closeDatabase(): void {

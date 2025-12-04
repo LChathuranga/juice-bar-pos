@@ -1,18 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FiDollarSign, FiShoppingCart, FiTrendingUp, FiPackage } from 'react-icons/fi'
-
-interface Sale {
-  date: string
-  product: string
-  quantity: number
-  revenue: number
-}
-
-interface TopProduct {
-  product: string
-  quantity: number
-  revenue: number
-}
+import { Sale, TopProduct } from '../../types'
 
 export default function SalesReport() {
   const [salesData, setSalesData] = useState<Sale[]>([])

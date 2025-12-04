@@ -1,10 +1,9 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { FiTrash2, FiPlus, FiMinus } from 'react-icons/fi'
 import NumberPadModal from './NumberPadModal'
+import { CartItem } from '../types'
 
-type OrderItem = { id: string; qty: number; title: string; price: number }
-
-export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems: OrderItem[]; setOrderItems: (v: OrderItem[]) => void }) {
+export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems: CartItem[]; setOrderItems: (v: CartItem[]) => void }) {
 
   const subtotal = useMemo(() => orderItems.reduce((s, i) => s + i.qty * i.price, 0), [orderItems])
   const [discountValue, setDiscountValue] = useState<number>(0)

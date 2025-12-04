@@ -1,15 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FiEdit2, FiTrash2, FiPlus, FiX } from 'react-icons/fi'
-
-type Product = {
-  id: string
-  title: string
-  category: string
-  price: number
-  image?: string
-  created_at?: string
-  updated_at?: string
-}
+import { Product, Category } from '../../types'
 
 const getImageUrl = (imageName: string) => {
   return new URL(`../../assets/images/${imageName}`, import.meta.url).href
@@ -17,9 +8,10 @@ const getImageUrl = (imageName: string) => {
 
 export default function ProductManagement() {
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [showModal, setShowModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [formData, setFormData] = useState({ title: '', category: 'cold-press', price: '' })
+  const [formData, setFormData] = useState({ title: '', category: '', price: '' })
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState<string>('green.jpg')
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -41,6 +33,7 @@ export default function ProductManagement() {
 
   useEffect(() => {
     loadProducts()
+    loadCategories()
   }, [])
 
   const loadProducts = async () => {
@@ -55,9 +48,18 @@ export default function ProductManagement() {
     }
   }
 
+  const loadCategories = async () => {
+    try {
+      const data = await window.api.getAllCategories()
+      setCategories(data)
+    } catch (error) {
+      console.error('Failed to load categories:', error)
+    }
+  }
+
   const handleAdd = () => {
     setEditingProduct(null)
-    setFormData({ title: '', category: 'cold-press', price: '' })
+    setFormData({ title: '', category: categories[0]?.id || '', price: '' })
     setSelectedImage('green.jpg')
     setImageFile(null)
     setImagePreview(null)
@@ -379,11 +381,17 @@ export default function ProductManagement() {
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
                   >
-                    <option value="cold-press">Cold Press</option>
-                    <option value="smoothies">Smoothies</option>
-                    <option value="shots">Shots</option>
-                    <option value="add-ons">Add-Ons</option>
+                    {categories.length === 0 ? (
+                      <option value="">No categories available</option>
+                    ) : (
+                      categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
 

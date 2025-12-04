@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import AdminSidebar from './AdminSidebar'
 import ProductManagement from './ProductManagement'
+import CategoryManagement from './CategoryManagement'
 import SalesReport from './SalesReport'
 
 export default function AdminView({ onBackToPOS }: { onBackToPOS: () => void }) {
@@ -30,12 +31,7 @@ export default function AdminView({ onBackToPOS }: { onBackToPOS: () => void }) 
         <main className="flex-1 overflow-auto p-6">
           {activeSection === 'products' && <ProductManagement />}
           {activeSection === 'sales' && <SalesReport />}
-          {activeSection === 'categories' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Category Management</h2>
-              <p className="text-gray-600">Category management features coming soon...</p>
-            </div>
-          )}
+          {activeSection === 'categories' && <CategoryManagement />}
           {activeSection === 'settings' && (
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Settings</h2>

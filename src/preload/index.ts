@@ -21,6 +21,13 @@ const api = {
   getTotalOrders: (days?: number) => ipcRenderer.invoke('db:getTotalOrders', days),
   getTopProducts: (limit?: number, days?: number) => ipcRenderer.invoke('db:getTopProducts', limit, days),
   
+  // Category operations
+  getAllCategories: () => ipcRenderer.invoke('db:getAllCategories'),
+  getCategoryById: (id: string) => ipcRenderer.invoke('db:getCategoryById', id),
+  createCategory: (category: any) => ipcRenderer.invoke('db:createCategory', category),
+  updateCategory: (id: string, updates: any) => ipcRenderer.invoke('db:updateCategory', id, updates),
+  deleteCategory: (id: string) => ipcRenderer.invoke('db:deleteCategory', id),
+  
   // Image operations
   saveProductImage: (imageData: string, filename: string) => ipcRenderer.invoke('save-product-image', imageData, filename),
 }

@@ -107,6 +107,27 @@ app.whenReady().then(() => {
     return db.getTopProducts(limit, days)
   })
 
+  // Category operations
+  ipcMain.handle('db:getAllCategories', () => {
+    return db.getAllCategories()
+  })
+
+  ipcMain.handle('db:getCategoryById', (_, id: string) => {
+    return db.getCategoryById(id)
+  })
+
+  ipcMain.handle('db:createCategory', (_, category) => {
+    return db.createCategory(category)
+  })
+
+  ipcMain.handle('db:updateCategory', (_, id: string, updates) => {
+    return db.updateCategory(id, updates)
+  })
+
+  ipcMain.handle('db:deleteCategory', (_, id: string) => {
+    return db.deleteCategory(id)
+  })
+
   // Image operations
   ipcMain.handle('save-product-image', (_, imageData: string, filename: string) => {
     try {
