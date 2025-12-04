@@ -119,6 +119,38 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
 
   const total = useMemo(() => Math.max(0, subtotal - discountAmount + taxValue), [subtotal, discountAmount, taxValue])
 
+  const handleCompleteSale = async () => {
+    if (orderItems.length === 0) {
+      alert('No items in order')
+      return
+    }
+
+    try {
+      await window.api.createOrder({
+        subtotal,
+        tax: taxValue,
+        total,
+        items: orderItems.map(item => ({
+          product_id: item.id,
+          product_name: item.title,
+          quantity: item.qty,
+          price: item.price
+        }))
+      })
+
+      // Clear order
+      setOrderItems([])
+      setDiscountValue(0)
+      setDiscountType('fixed')
+      setTaxValue(0)
+      
+      alert('Sale completed successfully!')
+    } catch (error) {
+      console.error('Failed to complete sale:', error)
+      alert('Failed to complete sale')
+    }
+  }
+
   return (
     <aside className="w-96 bg-white rounded-lg shadow p-4 h-[calc(100vh-90px)] mt-4 flex flex-col">
       <div className="mb-3">
@@ -187,14 +219,14 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <button
-                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs"
+                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs cursor-pointer"
                   onClick={() => { setDiscountValue(0); setDiscountType('fixed'); setModalDiscountStr('0') }}
                   aria-label="Clear discount"
                 >
                   Clear
                 </button>
                 <button
-                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs"
+                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs cursor-pointer"
                   onClick={() => { setModalDiscountValue(discountValue); setModalDiscountType('percent'); setShowDiscountModal(true) }}
                   aria-label="Edit discount"
                 >
@@ -210,14 +242,14 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <button
-                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs"
+                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs cursor-pointer"
                   onClick={() => { setTaxValue(0); setModalTaxStr('0') }}
                   aria-label="Clear tax"
                 >
                   Clear
                 </button>
                 <button
-                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs"
+                  className="flex-1 px-2 py-1 bg-white/20 rounded text-xs cursor-pointer"
                   onClick={() => { setModalTaxValue(taxValue); setShowTaxModal(true) }}
                   aria-label="Edit tax"
                 >
@@ -244,7 +276,12 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
 
           <div className="mt-3">
             <div className="bg-green-600 text-white text-center py-3 rounded font-bold text-xl">TOTAL: ${total.toFixed(2)}</div>
-            <button className="w-full mt-3 py-3 bg-emerald-500 text-white font-bold rounded">COMPLETE SALE</button>
+            <button 
+              className="w-full mt-3 py-3 bg-emerald-500 text-white font-bold rounded hover:bg-emerald-600 transition-colors"
+              onClick={handleCompleteSale}
+            >
+              COMPLETE SALE
+            </button>
           </div>
         </div>
       </div>

@@ -1,12 +1,14 @@
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 import OrderSidebar from './components/OrderSidebar'
+import AdminView from './components/admin/AdminView'
 import { useState } from 'react'
 import ItemsSection from './components/ItemsSection'
 
 function App(): React.JSX.Element {
   const [category, setCategory] = useState<string>('all')
   const [query, setQuery] = useState<string>('')
+  const [viewMode, setViewMode] = useState<'pos' | 'admin'>('pos')
 
   const [orderItems, setOrderItems] = useState<{ id: string; qty: number; title: string; price: number }[]>([])
 
@@ -14,9 +16,15 @@ function App(): React.JSX.Element {
   // eslint-disable-next-line no-console
   console.log('App: current category', category)
 
+  // If in admin mode, show admin view
+  if (viewMode === 'admin') {
+    return <AdminView onBackToPOS={() => setViewMode('pos')} />
+  }
+
+  // Otherwise show POS view
   return (
     <>
-      <Header />
+      <Header onAdminClick={() => setViewMode('admin')} />
       <div className="flex gap-6 h-[calc(100vh-64px)] bg-gray-200">
         <Sidebar active={category} onSelect={setCategory} />
         <main className="flex-1 pt-6 overflow-hidden">
@@ -36,7 +44,7 @@ function App(): React.JSX.Element {
               setOrderItems((prev) => {
                 const exists = prev.find((p) => p.id === item.id)
                 if (exists) return prev.map((p) => (p.id === item.id ? { ...p, qty: p.qty + qty } : p))
-                return [...prev, { id: item.id, qty, title: item.title, price: parseFloat(item.price.replace('$', '')) }]
+                return [...prev, { id: item.id, qty, title: item.title, price: item.price }]
               })
             }} />
           </div>

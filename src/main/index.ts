@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import * as db from './database'
 
 function createWindow(): void {
   // Create the browser window.
@@ -39,6 +40,9 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  // Initialize database
+  db.initDatabase()
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -47,6 +51,59 @@ app.whenReady().then(() => {
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
+  })
+
+  // IPC handlers for database operations
+  
+  // Product operations
+  ipcMain.handle('db:getAllProducts', () => {
+    return db.getAllProducts()
+  })
+
+  ipcMain.handle('db:getProductById', (_, id: string) => {
+    return db.getProductById(id)
+  })
+
+  ipcMain.handle('db:createProduct', (_, product) => {
+    return db.createProduct(product)
+  })
+
+  ipcMain.handle('db:updateProduct', (_, id: string, updates) => {
+    return db.updateProduct(id, updates)
+  })
+
+  ipcMain.handle('db:deleteProduct', (_, id: string) => {
+    return db.deleteProduct(id)
+  })
+
+  // Order operations
+  ipcMain.handle('db:createOrder', (_, order) => {
+    return db.createOrder(order)
+  })
+
+  ipcMain.handle('db:getOrders', (_, limit?: number) => {
+    return db.getOrders(limit)
+  })
+
+  ipcMain.handle('db:getOrderItems', (_, orderId: number) => {
+    return db.getOrderItems(orderId)
+  })
+
+  // Sales analytics
+  ipcMain.handle('db:getSalesReport', (_, days?: number) => {
+    return db.getSalesReport(days)
+  })
+
+  ipcMain.handle('db:getTotalRevenue', (_, days?: number) => {
+    return db.getTotalRevenue(days)
+  })
+
+  ipcMain.handle('db:getTotalOrders', (_, days?: number) => {
+    return db.getTotalOrders(days)
+  })
+
+  ipcMain.handle('db:getTopProducts', (_, limit?: number, days?: number) => {
+    return db.getTopProducts(limit, days)
   })
 
   // IPC test
@@ -65,6 +122,7 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
+  db.closeDatabase()
   if (process.platform !== 'darwin') {
     app.quit()
   }

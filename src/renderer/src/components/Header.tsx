@@ -1,4 +1,6 @@
-export default function Header() {
+import { FiSettings } from 'react-icons/fi'
+
+export default function Header({ onAdminClick }: { onAdminClick?: () => void }) {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,6 +23,16 @@ export default function Header() {
               <div className="font-medium">Becits: 11:28 am</div>
               <div className="text-xs text-gray-400">09.11.8: A10</div>
             </div>
+            {onAdminClick && (
+              <button
+                onClick={onAdminClick}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                title="Admin Panel"
+              >
+                <FiSettings className="w-4 h-4" />
+                <span className="font-medium">Admin</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
