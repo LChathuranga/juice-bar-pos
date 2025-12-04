@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FiUser, FiLock, FiSettings, FiImage, FiSave, FiPlus, FiTrash2, FiEdit2 } from 'react-icons/fi'
+import { FiUser, FiLock, FiSettings, FiImage, FiSave, FiPlus, FiTrash2, FiEdit2, FiDatabase } from 'react-icons/fi'
 import { Admin, ShopSettings } from '../../types'
 
 interface NewAdmin {
@@ -15,7 +15,7 @@ interface PasswordForm {
 }
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState<'shop' | 'admins' | 'security'>('shop')
+  const [activeTab, setActiveTab] = useState<'shop' | 'admins' | 'security' | 'database'>('shop')
   const [shopSettings, setShopSettings] = useState<ShopSettings>({
     id: 1,
     name: 'Juice Bar POS',
@@ -151,6 +151,45 @@ export default function Settings() {
     }
   }
 
+  const handleClearAllTables = async () => {
+    if (!confirm('⚠️ WARNING: This will delete ALL data (products, orders, sales, etc.) but keep admin accounts. Are you sure?')) {
+      return
+    }
+    
+    if (!confirm('This action CANNOT be undone! Type "DELETE" in your mind and click OK to proceed.')) {
+      return
+    }
+
+    try {
+      await window.api.clearAllTables()
+      setMessage({ type: 'success', text: 'All tables cleared successfully!' })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to clear tables' })
+    }
+  }
+
+  const handleResetToDefaults = async () => {
+    if (!confirm('⚠️ WARNING: This will reset the entire database to defaults (only admin account and categories will remain). ALL products, orders, and sales data will be lost. Are you sure?')) {
+      return
+    }
+    
+    if (!confirm('This action CANNOT be undone! Click OK to proceed with reset.')) {
+      return
+    }
+
+    try {
+      await window.api.resetToDefaults()
+      setMessage({ type: 'success', text: 'Database reset to defaults successfully!' })
+      setTimeout(() => {
+        setMessage(null)
+        window.location.reload() // Reload to reflect changes
+      }, 2000)
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to reset database' })
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -207,6 +246,19 @@ export default function Settings() {
               <div className="flex items-center gap-2">
                 <FiLock className="w-5 h-5" />
                 Security
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('database')}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'database'
+                  ? 'border-purple-600 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FiDatabase className="w-5 h-5" />
+                Database
               </div>
             </button>
           </nav>
@@ -462,6 +514,49 @@ export default function Settings() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Database Tab */}
+          {activeTab === 'database' && (
+            <div className="space-y-6">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-yellow-600 mt-0.5">⚠️</div>
+                  <div>
+                    <h4 className="font-semibold text-yellow-800 mb-1">Danger Zone</h4>
+                    <p className="text-sm text-yellow-700">These operations are irreversible. Please be careful!</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Clear All Tables</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Removes all data from products, categories, orders, sales, and shop settings. Admin accounts will be preserved.
+                  </p>
+                  <button
+                    onClick={handleClearAllTables}
+                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
+                  >
+                    Clear All Data
+                  </button>
+                </div>
+
+                <div className="border border-red-200 rounded-lg p-6 bg-red-50">
+                  <h3 className="text-lg font-semibold text-red-800 mb-2">Reset to Defaults</h3>
+                  <p className="text-sm text-red-700 mb-4">
+                    Completely resets the database to factory defaults. Only default admin (admin/admin123) and categories will remain. All products, orders, sales, and custom settings will be lost.
+                  </p>
+                  <button
+                    onClick={handleResetToDefaults}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                  >
+                    Reset Database
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

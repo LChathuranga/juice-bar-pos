@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FiLogOut } from 'react-icons/fi'
 import AdminSidebar from './AdminSidebar'
 import ProductManagement from './ProductManagement'
@@ -8,6 +8,22 @@ import Settings from './Settings'
 
 export default function AdminView({ onBackToPOS, onLogout }: { onBackToPOS: () => void; onLogout: () => void }) {
   const [activeSection, setActiveSection] = useState<string>('products')
+  const [shopName, setShopName] = useState('Juice Bar POS')
+
+  useEffect(() => {
+    loadShopSettings()
+  }, [])
+
+  const loadShopSettings = async () => {
+    try {
+      const settings = await window.api.getShopSettings()
+      if (settings && settings.name) {
+        setShopName(settings.name)
+      }
+    } catch (error) {
+      console.error('Failed to load shop settings:', error)
+    }
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
@@ -16,7 +32,7 @@ export default function AdminView({ onBackToPOS, onLogout }: { onBackToPOS: () =
         <div className="px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <span className="text-sm opacity-80">Juice Bar POS</span>
+            <span className="text-sm opacity-80">{shopName}</span>
           </div>
           <div className="flex items-center gap-3">
             <button

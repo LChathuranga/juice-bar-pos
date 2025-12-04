@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3'
 import { app } from 'electron'
 import { join } from 'path'
+import { unlinkSync, existsSync } from 'fs'
+import { is } from '@electron-toolkit/utils'
 
 let db: Database.Database | null = null
 
@@ -17,6 +19,7 @@ export interface Product {
 export interface Category {
   id: string
   name: string
+  icon?: string
   created_at: string
   updated_at: string
 }
@@ -72,11 +75,33 @@ export function initDatabase(): Database.Database {
   db = new Database(dbPath)
   db.pragma('journal_mode = WAL')
 
+  // Check if we need a fresh start (only admins table exists or no tables)
+  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all() as Array<{ name: string }>
+  const tableNames = tables.map(t => t.name)
+  
+  // If only admins table exists, or if we have old schema with issues, drop and recreate
+  const hasOnlyAdmins = tableNames.length === 1 && tableNames.includes('admins')
+  const hasOldSchema = tableNames.includes('order_items') && !tableNames.includes('shop_settings')
+  
+  if (hasOnlyAdmins || hasOldSchema) {
+    console.log('Dropping existing tables for fresh migration...')
+    db.exec(`
+      DROP TABLE IF EXISTS order_items;
+      DROP TABLE IF EXISTS orders;
+      DROP TABLE IF EXISTS products;
+      DROP TABLE IF EXISTS categories;
+      DROP TABLE IF EXISTS shop_settings;
+      DROP TABLE IF EXISTS admins;
+    `)
+    console.log('Dropped all tables. Creating fresh schema...')
+  }
+
   // Create tables
   db.exec(`
     CREATE TABLE IF NOT EXISTS categories (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
+      icon TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
@@ -105,13 +130,12 @@ export function initDatabase(): Database.Database {
     CREATE TABLE IF NOT EXISTS order_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       order_id INTEGER NOT NULL,
-      product_id TEXT NOT NULL,
+      product_id TEXT,
       product_name TEXT NOT NULL,
       quantity INTEGER NOT NULL,
       price REAL NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-      FOREIGN KEY (product_id) REFERENCES products(id)
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
     );
 
     CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
@@ -136,26 +160,14 @@ export function initDatabase(): Database.Database {
     );
   `)
 
-  // Migrate existing orders table if needed
-  const tableInfo = db.prepare("PRAGMA table_info(orders)").all() as Array<{ name: string }>
-  const hasDiscountColumn = tableInfo.some(col => col.name === 'discount')
-  const hasPaymentMethodColumn = tableInfo.some(col => col.name === 'payment_method')
+  // Add migration for icon column in categories table
+  const categoriesInfo = db.prepare("PRAGMA table_info(categories)").all() as Array<{ name: string }>
+  const hasIconColumn = categoriesInfo.some(col => col.name === 'icon')
   
-  if (!hasDiscountColumn) {
-    db.exec('ALTER TABLE orders ADD COLUMN discount REAL DEFAULT 0')
-    console.log('Added discount column to orders table')
-  }
-  
-  if (!hasPaymentMethodColumn) {
-    db.exec("ALTER TABLE orders ADD COLUMN payment_method TEXT DEFAULT 'cash'")
-    console.log('Added payment_method column to orders table')
-  }
-
-  // Seed initial data if products table is empty
-  const count = db.prepare('SELECT COUNT(*) as count FROM products').get() as { count: number }
-  if (count.count === 0) {
-    seedInitialCategories(db)
-    seedInitialData(db)
+  if (!hasIconColumn) {
+    console.log('Adding icon column to categories table...')
+    db.exec('ALTER TABLE categories ADD COLUMN icon TEXT')
+    console.log('Icon column added successfully')
   }
 
   // Seed default shop settings if not exists
@@ -181,50 +193,6 @@ export function initDatabase(): Database.Database {
   }
 
   return db
-}
-
-function seedInitialCategories(database: Database.Database): void {
-  const insertCategory = database.prepare(`
-    INSERT INTO categories (id, name)
-    VALUES (?, ?)
-  `)
-
-  const categories = [
-    { id: 'cold-press', name: 'Cold Press' },
-    { id: 'smoothies', name: 'Smoothies' },
-    { id: 'shots', name: 'Shots' },
-    { id: 'add-ons', name: 'Add-Ons' }
-  ]
-
-  for (const category of categories) {
-    insertCategory.run(category.id, category.name)
-  }
-}
-
-function seedInitialData(database: Database.Database): void {
-  const insertProduct = database.prepare(`
-    INSERT INTO products (id, title, category, price, image)
-    VALUES (?, ?, ?, ?, ?)
-  `)
-
-  const products = [
-    ['1', 'Green Detox', 'cold-press', 5.50, 'green.jpg'],
-    ['2', 'Berry Blast', 'smoothies', 6.00, 'berry.jpg'],
-    ['3', 'Ginger Shot', 'shots', 3.00, 'green.jpg'],
-    ['4', 'Protein Add-On', 'add-ons', 1.50, 'berry.jpg'],
-    ['5', 'Citrus Mix', 'cold-press', 5.00, 'green.jpg'],
-    ['6', 'Tropical Paradise', 'smoothies', 6.50, 'berry.jpg'],
-    ['7', 'Carrot Ginger', 'cold-press', 5.50, 'green.jpg'],
-    ['8', 'Turmeric Shot', 'shots', 3.50, 'green.jpg'],
-  ]
-
-  const insertMany = database.transaction((items) => {
-    for (const item of items) {
-      insertProduct.run(item)
-    }
-  })
-
-  insertMany(products)
 }
 
 export function getDatabase(): Database.Database {
@@ -287,6 +255,33 @@ export function updateProduct(id: string, updates: Partial<Omit<Product, 'id' | 
 
 export function deleteProduct(id: string): void {
   const db = getDatabase()
+  
+  // Get the product to check if it has an image
+  const product = getProductById(id)
+  if (product?.image) {
+    try {
+      // Construct the path to the image file
+      const imagesPath = is.dev 
+        ? join(__dirname, '../../src/renderer/src/assets/images')
+        : join(process.resourcesPath, 'app.asar.unpacked/src/renderer/src/assets/images')
+      
+      const imagePath = join(imagesPath, product.image)
+      
+      // Delete the image file if it exists
+      if (existsSync(imagePath)) {
+        unlinkSync(imagePath)
+        console.log(`Deleted image file: ${product.image}`)
+      }
+    } catch (error) {
+      console.error('Error deleting product image:', error)
+      // Continue with product deletion even if image deletion fails
+    }
+  }
+  
+  // First, set product_id to null in order_items for this product
+  // This maintains order history while allowing product deletion
+  db.prepare('UPDATE order_items SET product_id = NULL WHERE product_id = ?').run(id)
+  // Now delete the product
   db.prepare('DELETE FROM products WHERE id = ?').run(id)
 }
 
@@ -401,9 +396,9 @@ export function getCategoryById(id: string): Category | undefined {
 export function createCategory(category: Omit<Category, 'created_at' | 'updated_at'>): Category {
   const db = getDatabase()
   db.prepare(`
-    INSERT INTO categories (id, name)
-    VALUES (?, ?)
-  `).run(category.id, category.name)
+    INSERT INTO categories (id, name, icon)
+    VALUES (?, ?, ?)
+  `).run(category.id, category.name, category.icon || null)
   return getCategoryById(category.id)!
 }
 
@@ -415,6 +410,11 @@ export function updateCategory(id: string, updates: Partial<Omit<Category, 'id' 
   if (updates.name !== undefined) {
     fields.push('name = ?')
     values.push(updates.name)
+  }
+
+  if (updates.icon !== undefined) {
+    fields.push('icon = ?')
+    values.push(updates.icon)
   }
 
   if (fields.length > 0) {
@@ -547,6 +547,49 @@ export function verifyAdmin(username: string, password: string): boolean {
   const crypto = require('crypto')
   const hash = crypto.createHash('sha256').update(password).digest('hex')
   return admin.password === hash
+}
+
+// Migration/Reset operations
+export function clearAllTables(): void {
+  const db = getDatabase()
+  console.log('Clearing all data from tables...')
+  
+  db.exec(`
+    DELETE FROM order_items;
+    DELETE FROM orders;
+    DELETE FROM products;
+    DELETE FROM categories;
+    DELETE FROM shop_settings;
+  `)
+  
+  console.log('All tables cleared successfully (admins preserved)')
+}
+
+export function resetToDefaults(): void {
+  const db = getDatabase()
+  console.log('Resetting database to defaults...')
+  
+  // Clear all data including admins
+  clearAllTables()
+  db.exec('DELETE FROM admins;')
+  
+  // Seed default shop settings
+  db.prepare(`
+    INSERT INTO shop_settings (id, name, logo, address, phone)
+    VALUES (1, 'Juice Bar POS', '', '', '')
+  `).run()
+  
+  // Seed default admin
+  const crypto = require('crypto')
+  const defaultPassword = 'admin123'
+  const hash = crypto.createHash('sha256').update(defaultPassword).digest('hex')
+  
+  db.prepare(`
+    INSERT INTO admins (id, username, password, role)
+    VALUES ('admin-1', 'admin', ?, 'admin')
+  `).run(hash)
+  
+  console.log('Database reset to defaults successfully')
 }
 
 export function closeDatabase(): void {

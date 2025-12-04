@@ -1,14 +1,40 @@
-import React from 'react'
-import { FiDroplet, FiCoffee, FiPlusCircle, FiActivity } from 'react-icons/fi'
+import React, { useState, useEffect } from 'react'
+import { FiDroplet, FiCoffee, FiPlusCircle, FiActivity, FiZap, FiSun, FiMoon, FiStar } from 'react-icons/fi'
+import { Category } from '../../types'
 
 export default function Sidebar({ active, onSelect }: { active: string; onSelect: (id: string) => void }) {
+  const [categories, setCategories] = useState<Category[]>([])
 
-  const categories = [
-    { id: 'all', label: 'All', icon: <FiActivity className="w-5 h-5" /> },
-    { id: 'cold-press', label: 'Cold Press', icon: <FiDroplet className="w-5 h-5" /> },
-    { id: 'smoothies', label: 'Smoothies', icon: <FiCoffee className="w-5 h-5" /> },
-    { id: 'shots', label: 'Shots', icon: <FiActivity className="w-5 h-5" /> },
-    { id: 'add-ons', label: 'Add-Ons', icon: <FiPlusCircle className="w-5 h-5" /> },
+  useEffect(() => {
+    loadCategories()
+  }, [])
+
+  const loadCategories = async () => {
+    try {
+      const data = await window.api.getAllCategories()
+      setCategories(data)
+    } catch (error) {
+      console.error('Failed to load categories:', error)
+    }
+  }
+
+  const getCategoryIcon = (iconName?: string) => {
+    const iconMap: Record<string, React.ReactElement> = {
+      'FiDroplet': <FiDroplet className="w-5 h-5" />,
+      'FiCoffee': <FiCoffee className="w-5 h-5" />,
+      'FiActivity': <FiActivity className="w-5 h-5" />,
+      'FiPlusCircle': <FiPlusCircle className="w-5 h-5" />,
+      'FiZap': <FiZap className="w-5 h-5" />,
+      'FiSun': <FiSun className="w-5 h-5" />,
+      'FiMoon': <FiMoon className="w-5 h-5" />,
+      'FiStar': <FiStar className="w-5 h-5" />,
+    }
+    return iconMap[iconName || 'FiActivity'] || <FiActivity className="w-5 h-5" />
+  }
+
+  const allCategories = [
+    { id: 'all', name: 'All', icon: <FiActivity className="w-5 h-5" /> },
+    ...categories.map(cat => ({ ...cat, icon: getCategoryIcon(cat.icon) }))
   ]
 
   return (
@@ -22,7 +48,7 @@ export default function Sidebar({ active, onSelect }: { active: string; onSelect
       </div>
 
       <nav className="mt-3 px-2 divide-y divide-gray-100 pb-6">
-        {categories.map((c) => {
+        {allCategories.map((c) => {
           const isActive = active === c.id
           return (
             <div key={c.id} className="py-2">
@@ -40,7 +66,7 @@ export default function Sidebar({ active, onSelect }: { active: string; onSelect
                 <div className={`flex-shrink-0 ${isActive ? 'bg-white rounded-full p-1' : ''}`}>
                   {React.cloneElement(c.icon as any, { color: isActive ? '#ef4444' : '#111827' })}
                 </div>
-                <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-800'}`}>{c.label}</span>
+                <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-800'}`}>{c.name}</span>
               </button>
             </div>
           )

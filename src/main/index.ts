@@ -158,6 +158,15 @@ app.whenReady().then(() => {
     return db.verifyAdmin(username, password)
   })
 
+  // Migration/Reset operations
+  ipcMain.handle('db:clearAllTables', () => {
+    return db.clearAllTables()
+  })
+
+  ipcMain.handle('db:resetToDefaults', () => {
+    return db.resetToDefaults()
+  })
+
   // Image operations
   ipcMain.handle('save-product-image', (_, imageData: string, filename: string) => {
     try {

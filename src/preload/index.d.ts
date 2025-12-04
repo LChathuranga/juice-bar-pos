@@ -40,6 +40,7 @@ interface Sale {
 interface Category {
   id: string
   name: string
+  icon?: string
   created_at: string
   updated_at: string
 }
@@ -108,6 +109,10 @@ interface DatabaseAPI {
   deleteAdmin: (id: string) => Promise<void>
   changePassword: (username: string, currentPassword: string, newPassword: string) => Promise<boolean>
   verifyAdmin: (username: string, password: string) => Promise<boolean>
+  
+  // Migration/Reset operations
+  clearAllTables: () => Promise<void>
+  resetToDefaults: () => Promise<void>
   
   // Image operations
   saveProductImage: (imageData: string, filename: string) => Promise<{ success: boolean; filename?: string; error?: string }>

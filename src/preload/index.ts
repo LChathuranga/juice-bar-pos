@@ -41,6 +41,10 @@ const api = {
   verifyAdmin: (username: string, password: string) => 
     ipcRenderer.invoke('db:verifyAdmin', username, password),
   
+  // Migration/Reset operations
+  clearAllTables: () => ipcRenderer.invoke('db:clearAllTables'),
+  resetToDefaults: () => ipcRenderer.invoke('db:resetToDefaults'),
+  
   // Image operations
   saveProductImage: (imageData: string, filename: string) => ipcRenderer.invoke('save-product-image', imageData, filename),
   

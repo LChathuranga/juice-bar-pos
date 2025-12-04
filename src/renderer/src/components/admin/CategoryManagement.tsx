@@ -1,12 +1,23 @@
 import { useState, useEffect } from 'react'
-import { FiEdit2, FiTrash2, FiPlus, FiX } from 'react-icons/fi'
+import { FiEdit2, FiTrash2, FiPlus, FiX, FiDroplet, FiCoffee, FiActivity, FiPlusCircle, FiZap, FiSun, FiMoon, FiStar } from 'react-icons/fi'
 import { Category } from '../../types'
+
+const availableIcons = [
+  { name: 'FiDroplet', component: FiDroplet, label: 'Droplet' },
+  { name: 'FiCoffee', component: FiCoffee, label: 'Coffee' },
+  { name: 'FiActivity', component: FiActivity, label: 'Activity' },
+  { name: 'FiPlusCircle', component: FiPlusCircle, label: 'Plus Circle' },
+  { name: 'FiZap', component: FiZap, label: 'Zap' },
+  { name: 'FiSun', component: FiSun, label: 'Sun' },
+  { name: 'FiMoon', component: FiMoon, label: 'Moon' },
+  { name: 'FiStar', component: FiStar, label: 'Star' }
+]
 
 export default function CategoryManagement() {
   const [categories, setCategories] = useState<Category[]>([])
   const [showModal, setShowModal] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [formData, setFormData] = useState({ id: '', name: '' })
+  const [formData, setFormData] = useState({ id: '', name: '', icon: 'FiActivity' })
   const [loading, setLoading] = useState(true)
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set())
 
@@ -28,7 +39,7 @@ export default function CategoryManagement() {
 
   const handleAdd = () => {
     setEditingCategory(null)
-    setFormData({ id: '', name: '' })
+    setFormData({ id: '', name: '', icon: 'FiActivity' })
     setShowModal(true)
   }
 
@@ -36,7 +47,8 @@ export default function CategoryManagement() {
     setEditingCategory(category)
     setFormData({
       id: category.id,
-      name: category.name
+      name: category.name,
+      icon: category.icon || 'FiActivity'
     })
     setShowModal(true)
   }
@@ -118,20 +130,22 @@ export default function CategoryManagement() {
       if (editingCategory) {
         // Update existing category
         await window.api.updateCategory(editingCategory.id, {
-          name: formData.name
+          name: formData.name,
+          icon: formData.icon
         })
       } else {
         // Add new category - generate ID from name
         const id = formData.name.toLowerCase().replace(/\s+/g, '-')
         await window.api.createCategory({
           id,
-          name: formData.name
+          name: formData.name,
+          icon: formData.icon
         })
       }
       
       await loadCategories()
       setShowModal(false)
-      setFormData({ id: '', name: '' })
+      setFormData({ id: '', name: '', icon: 'FiActivity' })
     } catch (error) {
       console.error('Failed to save category:', error)
       alert('Failed to save category')
@@ -216,6 +230,7 @@ export default function CategoryManagement() {
                       className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                     />
                   </th>
+                  <th className="text-left py-3 px-4 text-gray-600 font-semibold">Icon</th>
                   <th className="text-left py-3 px-4 text-gray-600 font-semibold">ID</th>
                   <th className="text-left py-3 px-4 text-gray-600 font-semibold">Category Name</th>
                   <th className="text-left py-3 px-4 text-gray-600 font-semibold">Created At</th>
@@ -223,45 +238,55 @@ export default function CategoryManagement() {
                 </tr>
               </thead>
               <tbody>
-                {categories.map((category) => (
-                <tr key={category.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.has(category.id)}
-                      onChange={() => handleToggleSelect(category.id)}
-                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm font-mono">
-                      {category.id}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 font-medium text-gray-800">{category.name}</td>
-                  <td className="py-3 px-4 text-gray-600 text-sm">
-                    {new Date(category.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => handleEdit(category)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Edit"
-                      >
-                        <FiEdit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(category.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <FiTrash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                {categories.map((category) => {
+                  const iconData = availableIcons.find(i => i.name === category.icon)
+                  const IconComponent = iconData?.component || FiActivity
+                  
+                  return (
+                    <tr key={category.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.has(category.id)}
+                          onChange={() => handleToggleSelect(category.id)}
+                          className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                        />
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center justify-center w-10 h-10 bg-purple-50 rounded-lg">
+                          <IconComponent className="w-5 h-5 text-purple-600" />
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm font-mono">
+                          {category.id}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-medium text-gray-800">{category.name}</td>
+                      <td className="py-3 px-4 text-gray-600 text-sm">
+                        {new Date(category.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() => handleEdit(category)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <FiEdit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(category.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -303,6 +328,36 @@ export default function CategoryManagement() {
                       ID will be: <span className="font-mono">{formData.name.toLowerCase().replace(/\s+/g, '-')}</span>
                     </p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Icon
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {availableIcons.map((icon) => {
+                      const IconComponent = icon.component
+                      const isSelected = formData.icon === icon.name
+                      return (
+                        <button
+                          key={icon.name}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, icon: icon.name })}
+                          className={`flex flex-col items-center justify-center p-3 border-2 rounded-lg transition-all hover:border-purple-400 ${
+                            isSelected 
+                              ? 'border-purple-600 bg-purple-50' 
+                              : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                          title={icon.label}
+                        >
+                          <IconComponent className={`w-6 h-6 ${isSelected ? 'text-purple-600' : 'text-gray-600'}`} />
+                          <span className={`text-xs mt-1 ${isSelected ? 'text-purple-600 font-medium' : 'text-gray-500'}`}>
+                            {icon.label}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
 
                 {editingCategory && (
