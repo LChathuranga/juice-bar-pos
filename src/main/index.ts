@@ -294,7 +294,7 @@ app.whenReady().then(() => {
         </head>
         <body>
           <div class="header">
-            <h1>${shopSettings.name || 'JUICE BAR POS'}</h1>
+            <h1>${receiptData.shopName || 'JUICE BAR POS'}</h1>
             ${shopSettings.address ? `<p>${shopSettings.address}</p>` : '<p>Sri Lanka</p>'}
             ${shopSettings.phone ? `<p>Tel: ${shopSettings.phone}</p>` : ''}
           </div>

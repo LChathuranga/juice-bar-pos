@@ -119,6 +119,7 @@ interface DatabaseAPI {
   
   // Print operations
   printReceipt: (receiptData: {
+    shopName: string
     orderNumber: string
     date: string
     paymentMethod: string

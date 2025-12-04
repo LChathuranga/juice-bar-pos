@@ -6,6 +6,7 @@ import { CartItem } from '../../types'
 export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems: CartItem[]; setOrderItems: (v: CartItem[]) => void }) {
 
   const subtotal = useMemo(() => orderItems.reduce((s, i) => s + i.qty * i.price, 0), [orderItems])
+  const [shopName, setShopName] = useState('Juice Bar POS')
   const [discountValue, setDiscountValue] = useState<number>(0)
   const [discountType, setDiscountType] = useState<'fixed' | 'percent'>('fixed')
   const [taxValue, setTaxValue] = useState<number>(0)
@@ -49,6 +50,21 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
   useEffect(() => {
     modalDiscountTypeRef.current = modalDiscountType
   }, [modalDiscountType])
+
+  useEffect(() => {
+    // Load shop settings
+    const loadSettings = async () => {
+      try {
+        const settings = await window.api.getShopSettings()
+        if (settings) {
+          setShopName(settings.name)
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error)
+      }
+    }
+    loadSettings()
+  }, [])
 
   useEffect(() => {
     if (!showDiscountModal) return
@@ -191,6 +207,7 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
     try {
       // Send print data to main process for silent printing
       await window.api.printReceipt({
+        shopName: shopName,
         orderNumber: completedOrderNumber,
         date: new Date().toLocaleString(),
         paymentMethod: completedOrderDetails.paymentMethod === 'cash' ? 'Cash' : 'Card',
@@ -438,7 +455,19 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
       {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-8 text-center">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-8 text-center relative">
+            <button
+              onClick={() => {
+                setShowSuccessModal(false)
+                setPaymentMethod('cash')
+                setCurrentOrderId(new Date().getTime().toString().slice(-6))
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
             <div className="mb-4">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
                 <FiCheck className="w-8 h-8 text-green-600" />
@@ -496,16 +525,6 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
                 </svg>
                 Print
               </button>
-              <button
-                onClick={() => {
-                  setShowSuccessModal(false)
-                  setPaymentMethod('cash')
-                  setCurrentOrderId(new Date().getTime().toString().slice(-6))
-                }}
-                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
-              >
-                New Order
-              </button>
             </div>
           </div>
         </div>
@@ -529,7 +548,7 @@ export default function OrderSidebar({ orderItems, setOrderItems }: { orderItems
             <div className="flex-1 overflow-auto p-6 bg-gray-50">
               <div className="bg-white p-6 shadow-sm" style={{ fontFamily: 'Courier New, monospace', fontSize: '12px' }}>
                 <div className="text-center mb-4 pb-3 border-b-2 border-dashed border-gray-800">
-                  <h1 className="text-xl font-bold mb-1">JUICE BAR POS</h1>
+                  <h1 className="text-xl font-bold mb-1">{shopName.toUpperCase()}</h1>
                   <p className="text-xs">Sri Lanka</p>
                 </div>
                 <div className="mb-4 text-xs space-y-1">

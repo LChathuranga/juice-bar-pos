@@ -13,9 +13,9 @@ export default function ProductManagement() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [formData, setFormData] = useState({ title: '', category: '', price: '' })
   const [loading, setLoading] = useState(true)
-  const [selectedImage, setSelectedImage] = useState<string>('green.jpg')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [removeImage, setRemoveImage] = useState(false)
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,9 +60,9 @@ export default function ProductManagement() {
   const handleAdd = () => {
     setEditingProduct(null)
     setFormData({ title: '', category: categories[0]?.id || '', price: '' })
-    setSelectedImage('green.jpg')
     setImageFile(null)
     setImagePreview(null)
+    setRemoveImage(false)
     setShowModal(true)
   }
 
@@ -73,9 +73,9 @@ export default function ProductManagement() {
       category: product.category,
       price: product.price.toString()
     })
-    setSelectedImage(product.image || 'green.jpg')
     setImageFile(null)
     setImagePreview(null)
+    setRemoveImage(false)
     setShowModal(true)
   }
 
@@ -153,7 +153,7 @@ export default function ProductManagement() {
     e.preventDefault()
     
     try {
-      let imageName = selectedImage
+      let imageName: string | undefined = undefined
       
       // If user uploaded a new image, save it
       if (imageFile && imagePreview) {
@@ -171,12 +171,18 @@ export default function ProductManagement() {
       
       if (editingProduct) {
         // Update existing product
-        await window.api.updateProduct(editingProduct.id, {
+        const updates: any = {
           title: formData.title,
           category: formData.category,
-          price: parseFloat(formData.price),
-          image: imageName
-        })
+          price: parseFloat(formData.price)
+        }
+        // Handle image update/removal
+        if (imageName) {
+          updates.image = imageName
+        } else if (removeImage) {
+          updates.image = null
+        }
+        await window.api.updateProduct(editingProduct.id, updates)
       } else {
         // Add new product
         await window.api.createProduct({
@@ -191,9 +197,9 @@ export default function ProductManagement() {
       await loadProducts()
       setShowModal(false)
       setFormData({ title: '', category: 'cold-press', price: '' })
-      setSelectedImage('green.jpg')
       setImageFile(null)
       setImagePreview(null)
+      setRemoveImage(false)
     } catch (error) {
       console.error('Failed to save product:', error)
       alert('Failed to save product')
@@ -432,9 +438,17 @@ export default function ProductManagement() {
                           <FiX className="w-4 h-4" />
                         </button>
                       </div>
-                    ) : editingProduct && editingProduct.image ? (
+                    ) : editingProduct && editingProduct.image && !removeImage ? (
                       <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-300">
                         <img src={getImageUrl(editingProduct.image)} alt="Current" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setRemoveImage(true)}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                          title="Remove image"
+                        >
+                          <FiX className="w-4 h-4" />
+                        </button>
                       </div>
                     ) : (
                       <div className="w-full aspect-video rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
