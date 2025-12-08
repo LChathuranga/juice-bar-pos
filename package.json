@@ -18,6 +18,7 @@
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
+    "generate-icon": "node scripts/generate-icon.js",
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
@@ -47,9 +48,11 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
+    "png-to-ico": "^3.0.1",
     "prettier": "^3.6.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "sharp": "^0.34.5",
     "typescript": "^5.9.2",
     "vite": "^7.1.6"
   }

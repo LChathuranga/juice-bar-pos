@@ -19,6 +19,8 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  deleteAppDataOnUninstall: true
+  include: build/uninstaller.nsh
 mac:
   icon: resources/icon.icns
   entitlementsInherit: build/entitlements.mac.plist
