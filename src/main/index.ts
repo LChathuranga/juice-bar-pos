@@ -69,8 +69,8 @@ body{font-family:'Courier New',monospace;font-size:9px;line-height:1.2;padding:2
 <div class="header">
 <div class="shop-name">${receiptData.shopName || 'JUICE BAR POS'}</div>
 <div class="shop-info">
-${shopSettings.address ? `<div>${shopSettings.address}</div>` : '<div>Sri Lanka</div>'}
-${shopSettings.phone ? `<div>Tel: ${shopSettings.phone}</div>` : ''}
+${receiptData.address ? `<div>${receiptData.address}</div>` : '<div>Sri Lanka</div>'}
+${receiptData.phone ? `<div>Tel: ${receiptData.phone}</div>` : ''}
 </div>
 </div>
 <div class="order-info">
@@ -221,7 +221,7 @@ app.whenReady().then(() => {
         const orderInfoHeight = 12
         const itemHeight = itemCount * 8
         const totalsHeight = 14 + (hasDiscount ? 5 : 0) + (hasTax ? 5 : 0)
-        const footerHeight = 10
+        const footerHeight = 15  // Increased to account for bottom margin
         const padding = 4
 
         const totalHeightMM = headerHeight + orderInfoHeight + itemHeight + totalsHeight + footerHeight + padding
