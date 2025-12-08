@@ -83,7 +83,7 @@ interface DatabaseAPI {
       price: number
     }>
   }) => Promise<Order>
-  getOrders: (limit?: number) => Promise<Order[]>
+  getOrders: (limit?: number, days?: number) => Promise<Order[]>
   getOrderItems: (orderId: number) => Promise<OrderItem[]>
   
   // Sales analytics

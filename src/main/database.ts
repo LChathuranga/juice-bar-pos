@@ -319,67 +319,178 @@ export function createOrder(order: { subtotal: number; tax: number; total: numbe
   return createOrderTransaction(order)
 }
 
-export function getOrders(limit = 50): Order[] {
-  const db = getDatabase()
-  return db.prepare('SELECT * FROM orders ORDER BY created_at DESC LIMIT ?').all(limit) as Order[]
-}
-
 export function getOrderItems(orderId: number): OrderItem[] {
   const db = getDatabase()
   return db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId) as OrderItem[]
 }
 
 // Sales analytics
+// days = 0 means today only, days = -1 means all time
 export function getSalesReport(days = 7): Sale[] {
   const db = getDatabase()
-  const query = `
-    SELECT 
-      DATE(oi.created_at) as date,
-      oi.product_name as product,
-      SUM(oi.quantity) as quantity,
-      SUM(oi.quantity * oi.price) as revenue
-    FROM order_items oi
-    WHERE oi.created_at >= DATE('now', '-' || ? || ' days')
-    GROUP BY DATE(oi.created_at), oi.product_name
-    ORDER BY date DESC, revenue DESC
-  `
-  return db.prepare(query).all(days) as Sale[]
+  let query: string
+  const daysNum = Number(days)
+  
+  if (daysNum === 0) {
+    // Today only
+    query = `
+      SELECT 
+        DATE(oi.created_at) as date,
+        oi.product_name as product,
+        SUM(oi.quantity) as quantity,
+        SUM(oi.quantity * oi.price) as revenue
+      FROM order_items oi
+      WHERE DATE(oi.created_at) = DATE('now', 'localtime')
+      GROUP BY DATE(oi.created_at), oi.product_name
+      ORDER BY date DESC, revenue DESC
+    `
+    return db.prepare(query).all() as Sale[]
+  } else if (daysNum === -1 || daysNum < 0) {
+    // All time
+    query = `
+      SELECT 
+        DATE(oi.created_at) as date,
+        oi.product_name as product,
+        SUM(oi.quantity) as quantity,
+        SUM(oi.quantity * oi.price) as revenue
+      FROM order_items oi
+      GROUP BY DATE(oi.created_at), oi.product_name
+      ORDER BY date DESC, revenue DESC
+    `
+    return db.prepare(query).all() as Sale[]
+  } else {
+    query = `
+      SELECT 
+        DATE(oi.created_at) as date,
+        oi.product_name as product,
+        SUM(oi.quantity) as quantity,
+        SUM(oi.quantity * oi.price) as revenue
+      FROM order_items oi
+      WHERE oi.created_at >= DATE('now', 'localtime', '-' || ? || ' days')
+      GROUP BY DATE(oi.created_at), oi.product_name
+      ORDER BY date DESC, revenue DESC
+    `
+    return db.prepare(query).all(daysNum) as Sale[]
+  }
 }
 
+// days = 0 means today only, days = -1 means all time
 export function getTotalRevenue(days = 7): number {
   const db = getDatabase()
-  const result = db.prepare(`
-    SELECT COALESCE(SUM(total), 0) as total
-    FROM orders
-    WHERE created_at >= DATE('now', '-' || ? || ' days')
-  `).get(days) as { total: number }
+  let result: { total: number }
+  const daysNum = Number(days)
+  
+  if (daysNum === 0) {
+    result = db.prepare(`
+      SELECT COALESCE(SUM(total), 0) as total
+      FROM orders
+      WHERE DATE(created_at) = DATE('now', 'localtime')
+    `).get() as { total: number }
+  } else if (daysNum === -1 || daysNum < 0) {
+    result = db.prepare(`
+      SELECT COALESCE(SUM(total), 0) as total
+      FROM orders
+    `).get() as { total: number }
+  } else {
+    result = db.prepare(`
+      SELECT COALESCE(SUM(total), 0) as total
+      FROM orders
+      WHERE created_at >= DATE('now', 'localtime', '-' || ? || ' days')
+    `).get(daysNum) as { total: number }
+  }
   return result.total
 }
 
+// days = 0 means today only, days = -1 means all time
 export function getTotalOrders(days = 7): number {
   const db = getDatabase()
-  const result = db.prepare(`
-    SELECT COUNT(*) as count
-    FROM orders
-    WHERE created_at >= DATE('now', '-' || ? || ' days')
-  `).get(days) as { count: number }
+  let result: { count: number }
+  const daysNum = Number(days)
+  
+  if (daysNum === 0) {
+    result = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM orders
+      WHERE DATE(created_at) = DATE('now', 'localtime')
+    `).get() as { count: number }
+  } else if (daysNum === -1 || daysNum < 0) {
+    result = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM orders
+    `).get() as { count: number }
+  } else {
+    result = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM orders
+      WHERE created_at >= DATE('now', 'localtime', '-' || ? || ' days')
+    `).get(daysNum) as { count: number }
+  }
   return result.count
 }
 
+// days = -1 means all time
 export function getTopProducts(limit = 5, days = 30): Array<{ product: string; quantity: number; revenue: number }> {
   const db = getDatabase()
-  const query = `
-    SELECT 
-      oi.product_name as product,
-      SUM(oi.quantity) as quantity,
-      SUM(oi.quantity * oi.price) as revenue
-    FROM order_items oi
-    WHERE oi.created_at >= DATE('now', '-' || ? || ' days')
-    GROUP BY oi.product_name
-    ORDER BY revenue DESC
-    LIMIT ?
-  `
-  return db.prepare(query).all(days, limit) as Array<{ product: string; quantity: number; revenue: number }>
+  const daysNum = Number(days)
+  
+  if (daysNum === 0) {
+    const query = `
+      SELECT 
+        oi.product_name as product,
+        SUM(oi.quantity) as quantity,
+        SUM(oi.quantity * oi.price) as revenue
+      FROM order_items oi
+      WHERE DATE(oi.created_at) = DATE('now', 'localtime')
+      GROUP by oi.product_name
+      ORDER BY revenue DESC
+      LIMIT ?
+    `
+    return db.prepare(query).all(limit) as Array<{ product: string; quantity: number; revenue: number }>
+  } else if (daysNum === -1 || daysNum < 0) {
+    const query = `
+      SELECT 
+        oi.product_name as product,
+        SUM(oi.quantity) as quantity,
+        SUM(oi.quantity * oi.price) as revenue
+      FROM order_items oi
+      GROUP BY oi.product_name
+      ORDER BY revenue DESC
+      LIMIT ?
+    `
+    return db.prepare(query).all(limit) as Array<{ product: string; quantity: number; revenue: number }>
+  } else {
+    const query = `
+      SELECT 
+        oi.product_name as product,
+        SUM(oi.quantity) as quantity,
+        SUM(oi.quantity * oi.price) as revenue
+      FROM order_items oi
+      WHERE oi.created_at >= DATE('now', 'localtime', '-' || ? || ' days')
+      GROUP BY oi.product_name
+      ORDER BY revenue DESC
+      LIMIT ?
+    `
+    return db.prepare(query).all(daysNum, limit) as Array<{ product: string; quantity: number; revenue: number }>
+  }
+}
+
+// days = 0 means today only, days = -1 means all time
+export function getOrders(limit = 50, days?: number): Order[] {
+  const db = getDatabase()
+  const daysNum = days !== undefined ? Number(days) : undefined
+  
+  if (daysNum === 0) {
+    return db.prepare(`
+      SELECT * FROM orders 
+      WHERE DATE(created_at) = DATE('now', 'localtime')
+      ORDER BY created_at DESC 
+      LIMIT ?
+    `).all(limit) as Order[]
+  } else if (daysNum === -1 || (daysNum !== undefined && daysNum < 0)) {
+    return db.prepare('SELECT * FROM orders ORDER BY created_at DESC LIMIT ?').all(limit) as Order[]
+  } else {
+    return db.prepare('SELECT * FROM orders ORDER BY created_at DESC LIMIT ?').all(limit) as Order[]
+  }
 }
 
 // Category operations

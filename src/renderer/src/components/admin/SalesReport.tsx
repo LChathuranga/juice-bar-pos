@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { FiDollarSign, FiShoppingCart, FiTrendingUp, FiPackage } from 'react-icons/fi'
+import { FiDollarSign, FiShoppingCart, FiTrendingUp, FiPackage, FiCalendar } from 'react-icons/fi'
 import { Sale, TopProduct, Order } from '../../types'
+
+type DateFilter = 'today' | '7days' | '30days' | 'all'
 
 export default function SalesReport() {
   const [salesData, setSalesData] = useState<Sale[]>([])
@@ -10,20 +12,40 @@ export default function SalesReport() {
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
   const [displayedOrders, setDisplayedOrders] = useState<number>(8)
   const [loading, setLoading] = useState(true)
+  const [dateFilter, setDateFilter] = useState<DateFilter>('today')
 
   useEffect(() => {
     loadSalesData()
-  }, [])
+  }, [dateFilter])
+
+  const getDaysFromFilter = (filter: DateFilter): number => {
+    switch (filter) {
+      case 'today': return 0
+      case '7days': return 7
+      case '30days': return 30
+      case 'all': return -1
+    }
+  }
+
+  const getFilterLabel = (filter: DateFilter): string => {
+    switch (filter) {
+      case 'today': return 'Today'
+      case '7days': return 'Last 7 days'
+      case '30days': return 'Last 30 days'
+      case 'all': return 'All time'
+    }
+  }
 
   const loadSalesData = async () => {
     try {
       setLoading(true)
+      const days = getDaysFromFilter(dateFilter)
       const [sales, revenue, orders, top, recent] = await Promise.all([
-        window.api.getSalesReport(7),
-        window.api.getTotalRevenue(7),
-        window.api.getTotalOrders(7),
-        window.api.getTopProducts(5, 30),
-        window.api.getOrders(50) // Load more orders than displayed
+        window.api.getSalesReport(days),
+        window.api.getTotalRevenue(days),
+        window.api.getTotalOrders(days),
+        window.api.getTopProducts(5, days),
+        window.api.getOrders(50, days)
       ])
       
       setSalesData(sales)
@@ -31,6 +53,7 @@ export default function SalesReport() {
       setTotalOrders(orders)
       setTopProducts(top)
       setRecentOrders(recent)
+      setDisplayedOrders(8) // Reset pagination when filter changes
     } catch (error) {
       console.error('Failed to load sales data:', error)
     } finally {
@@ -58,6 +81,31 @@ export default function SalesReport() {
 
   return (
     <div className="space-y-6">
+      {/* Date Filter */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-gray-700">
+            <FiCalendar className="w-5 h-5" />
+            <span className="font-medium">Filter by:</span>
+          </div>
+          <div className="flex gap-2">
+            {(['today', '7days', '30days', 'all'] as DateFilter[]).map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setDateFilter(filter)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  dateFilter === filter
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {getFilterLabel(filter)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
@@ -66,7 +114,7 @@ export default function SalesReport() {
             <FiDollarSign className="w-8 h-8 opacity-80" />
           </div>
           <p className="text-3xl font-bold">Rs. {totalRevenue.toFixed(2)}</p>
-          <p className="text-sm opacity-80 mt-1">Last 7 days</p>
+          <p className="text-sm opacity-80 mt-1">{getFilterLabel(dateFilter)}</p>
         </div>
 
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow p-6 text-white">
@@ -75,7 +123,7 @@ export default function SalesReport() {
             <FiShoppingCart className="w-8 h-8 opacity-80" />
           </div>
           <p className="text-3xl font-bold">{totalOrders}</p>
-          <p className="text-sm opacity-80 mt-1">Items sold</p>
+          <p className="text-sm opacity-80 mt-1">{getFilterLabel(dateFilter)}</p>
         </div>
 
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow p-6 text-white">
@@ -84,7 +132,7 @@ export default function SalesReport() {
             <FiTrendingUp className="w-8 h-8 opacity-80" />
           </div>
           <p className="text-3xl font-bold">Rs. {avgOrderValue.toFixed(2)}</p>
-          <p className="text-sm opacity-80 mt-1">Per transaction</p>
+          <p className="text-sm opacity-80 mt-1">{getFilterLabel(dateFilter)}</p>
         </div>
 
         <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow p-6 text-white">
@@ -104,7 +152,7 @@ export default function SalesReport() {
           <p className="text-gray-600 mt-1">Latest transactions with payment details</p>
         </div>
         <div className="p-6">
-          <div className="overflow-x-auto">
+          <div className="overflow-auto max-h-80">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
@@ -172,7 +220,7 @@ export default function SalesReport() {
           <p className="text-gray-600 mt-1">Sales by product</p>
         </div>
         <div className="p-6">
-          <div className="overflow-x-auto">
+          <div className="overflow-auto max-h-80">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
@@ -214,7 +262,7 @@ export default function SalesReport() {
           <p className="text-gray-600 mt-1">Best performers</p>
         </div>
         <div className="p-6">
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-auto max-h-80">
             {topProducts.length === 0 ? (
               <div className="text-center text-gray-500 py-6">
                 No product data available

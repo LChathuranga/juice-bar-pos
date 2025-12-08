@@ -118,7 +118,7 @@ app.whenReady().then(() => {
 
   // Order operations
   ipcMain.handle('db:createOrder', (_, order) => db.createOrder(order))
-  ipcMain.handle('db:getOrders', (_, limit?: number) => db.getOrders(limit))
+  ipcMain.handle('db:getOrders', (_, limit?: number, days?: number) => db.getOrders(limit, days))
   ipcMain.handle('db:getOrderItems', (_, orderId: number) => db.getOrderItems(orderId))
 
   // Sales analytics

@@ -12,7 +12,7 @@ const api = {
   
   // Order operations
   createOrder: (order: any) => ipcRenderer.invoke('db:createOrder', order),
-  getOrders: (limit?: number) => ipcRenderer.invoke('db:getOrders', limit),
+  getOrders: (limit?: number, days?: number) => ipcRenderer.invoke('db:getOrders', limit, days),
   getOrderItems: (orderId: number) => ipcRenderer.invoke('db:getOrderItems', orderId),
   
   // Sales analytics
