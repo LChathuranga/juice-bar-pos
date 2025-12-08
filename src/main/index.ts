@@ -60,7 +60,7 @@ body{font-family:'Courier New',monospace;font-size:9px;line-height:1.2;padding:2
 .totals{margin-bottom:1.5mm}
 .total-row{display:flex;justify-content:space-between;font-size:9px}
 .total-row.grand{font-weight:bold;font-size:11px;border-top:1px solid #000;padding-top:1.5mm;margin-top:1.5mm}
-.footer{text-align:center;padding-top:1.5mm;border-top:1px dashed #000;font-size:8px;padding-bottom:1mm}
+.footer{text-align:center;padding-top:1.5mm;border-top:1px dashed #000;font-size:8px;margin-bottom:5mm}
 @page{size:${RECEIPT_WIDTH_MM}mm auto;margin:0}
 @media print{html,body{width:${RECEIPT_WIDTH_MM}mm}}
 </style>
@@ -249,7 +249,7 @@ body{font-family:'Courier New',monospace;font-size:11px;line-height:1.2;padding:
 .totals{margin-bottom:1mm}
 .total-row{display:flex;justify-content:space-between;font-size:12px;margin:0.5mm 0}
 .total-row.grand{font-weight:bold;font-size:13px;border-top:1px solid #000;padding-top:1mm;margin-top:1mm}
-.footer{text-align:center;padding-top:1mm;border-top:1px dashed #000;font-size:11px}
+.footer{text-align:center;padding-top:1mm;border-top:1px dashed #000;font-size:11px;margin-bottom:5mm}
 .footer p{margin:0.5mm 0}
 </style>
 </head>
