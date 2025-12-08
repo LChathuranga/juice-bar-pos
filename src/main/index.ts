@@ -60,7 +60,7 @@ body{font-family:'Courier New',monospace;font-size:9px;line-height:1.2;padding:2
 .totals{margin-bottom:1.5mm}
 .total-row{display:flex;justify-content:space-between;font-size:9px}
 .total-row.grand{font-weight:bold;font-size:11px;border-top:1px solid #000;padding-top:1.5mm;margin-top:1.5mm}
-.footer{text-align:center;padding-top:1.5mm;border-top:1px dashed #000;font-size:8px;margin-bottom:5mm}
+.footer{text-align:center;padding-top:1.5mm;border-top:1px dashed #000;font-size:8px;margin-bottom:1mm}
 @page{size:${RECEIPT_WIDTH_MM}mm auto;margin:0}
 @media print{html,body{width:${RECEIPT_WIDTH_MM}mm}}
 </style>
@@ -221,7 +221,7 @@ app.whenReady().then(() => {
         const orderInfoHeight = 12
         const itemHeight = itemCount * 8
         const totalsHeight = 14 + (hasDiscount ? 5 : 0) + (hasTax ? 5 : 0)
-        const footerHeight = 10
+        const footerHeight = 18
         const padding = 4
 
         const totalHeightMM = headerHeight + orderInfoHeight + itemHeight + totalsHeight + footerHeight + padding
