@@ -157,12 +157,13 @@ app.whenReady().then(() => {
   ipcMain.handle('db:clearAllTables', () => db.clearAllTables())
   ipcMain.handle('db:resetToDefaults', () => db.resetToDefaults())
 
-  // Image operations
+  // Image operations - save to userData folder in production
   ipcMain.handle('save-product-image', (_, imageData: string, filename: string) => {
     try {
+      // In dev: save to src folder, In production: save to userData folder
       const imagesPath = is.dev
         ? join(__dirname, '../../src/renderer/src/assets/images')
-        : join(process.resourcesPath, 'app.asar.unpacked/src/renderer/src/assets/images')
+        : join(app.getPath('userData'), 'product-images')
 
       if (!existsSync(imagesPath)) {
         mkdirSync(imagesPath, { recursive: true })
@@ -173,11 +174,35 @@ app.whenReady().then(() => {
       const filePath = join(imagesPath, filename)
 
       writeFileSync(filePath, buffer)
-      return { success: true, filename }
+      
+      // Return the full path for production, filename for dev
+      const imagePath = is.dev ? filename : filePath
+      return { success: true, filename, imagePath }
     } catch (error) {
       console.error('Failed to save image:', error)
       return { success: false, error: String(error) }
     }
+  })
+
+  // Get product image path for loading images
+  ipcMain.handle('get-product-image-path', (_, filename: string) => {
+    if (is.dev) {
+      return null // Use relative path in dev
+    }
+    // In production, return full file path
+    const imagePath = join(app.getPath('userData'), 'product-images', filename)
+    if (existsSync(imagePath)) {
+      return `file://${imagePath.replace(/\\/g, '/')}`
+    }
+    return null
+  })
+
+  // Get the base path for product images
+  ipcMain.handle('get-images-base-path', () => {
+    if (is.dev) {
+      return null
+    }
+    return `file://${join(app.getPath('userData'), 'product-images').replace(/\\/g, '/')}`
   })
 
   // Print receipt - direct print with custom page size

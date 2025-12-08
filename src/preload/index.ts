@@ -47,6 +47,8 @@ const api = {
   
   // Image operations
   saveProductImage: (imageData: string, filename: string) => ipcRenderer.invoke('save-product-image', imageData, filename),
+  getProductImagePath: (filename: string) => ipcRenderer.invoke('get-product-image-path', filename),
+  getImagesBasePath: () => ipcRenderer.invoke('get-images-base-path'),
   
   // Print operations
   printReceipt: (receiptData: any) => ipcRenderer.invoke('print-receipt', receiptData),

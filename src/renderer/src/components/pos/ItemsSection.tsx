@@ -2,8 +2,58 @@ import { useMemo, useState, useEffect } from 'react'
 import NumberPadModal from './NumberPadModal'
 import { Product } from '../../types'
 
-const getImageUrl = (imageName: string) => {
-    return new URL(`../../assets/images/${imageName}`, import.meta.url).href
+// Cache for image paths
+const imagePathCache: Record<string, string> = {}
+
+// Component to handle async image loading
+function ProductImage({ imageName, alt, className }: { imageName?: string; alt: string; className: string }) {
+  const [src, setSrc] = useState<string>('')
+
+  useEffect(() => {
+    if (!imageName) {
+      setSrc('')
+      return
+    }
+
+    // Check cache first
+    if (imagePathCache[imageName]) {
+      setSrc(imagePathCache[imageName])
+      return
+    }
+
+    // Load image path
+    const loadImage = async () => {
+      // Try production path first
+      const productionPath = await window.api.getProductImagePath(imageName)
+      if (productionPath) {
+        imagePathCache[imageName] = productionPath
+        setSrc(productionPath)
+        return
+      }
+
+      // Fallback to dev path
+      try {
+        const url = new URL(`../../assets/images/${imageName}`, import.meta.url).href
+        imagePathCache[imageName] = url
+        setSrc(url)
+      } catch {
+        setSrc('')
+      }
+    }
+
+    loadImage()
+  }, [imageName])
+
+  if (!src) {
+    return <div className={`${className} bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center`}>
+      <svg className="w-16 h-16 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M20.5,8.5c-1.333,0-2.5-0.5-3.5-1.5c-1,1-2.167,1.5-3.5,1.5S11,8,10,7C9,8,7.833,8.5,6.5,8.5S4,8,3,7v11c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V7C20,8,19.167,8.5,20.5,8.5z M7,17H5v-2h2V17z M7,13H5v-2h2V13z M11,17H9v-2h2V17z M11,13H9v-2h2V13z M15,17h-2v-2h2V17z M15,13h-2v-2h2V13z M19,17h-2v-2h2V17z M19,13h-2v-2h2V13z" opacity=".3"/>
+        <path d="M3,2v4c1,1,2,1.5,3.5,1.5S9,7,10,6c1,1,2.5,1.5,4,1.5s3-0.5,4-1.5c1,1,2,1.5,3.5,1.5S23,7,24,6V2H3z M19,20H5V9c-1.667,0-3,0.667-4,2v11c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V11c-1,1.333-2.333,2-4,2V20z"/>
+      </svg>
+    </div>
+  }
+
+  return <img src={src} alt={alt} className={className} />
 }
 
 export default function ItemsSection({ filter, query, onRequestAdd }: { filter: string; query?: string; onRequestAdd?: (item: Product, qty: number) => void }) {
@@ -77,16 +127,7 @@ export default function ItemsSection({ filter, query, onRequestAdd }: { filter: 
                     {visible.map((it) => (
                     <div key={it.id} className="rounded-lg overflow-hidden shadow-sm hover:shadow-md transform transition-transform duration-150 hover:scale-[1.04] cursor-pointer bg-white w-[130px]" onClick={() => { setSelected(it); setPickQtyStr('1') }}>
                         <div className="relative h-[100px]">
-                            {it.image ? (
-                                <img src={getImageUrl(it.image)} alt={it.title} className="w-full h-full object-cover block" />
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-                                    <svg className="w-16 h-16 text-green-600" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M20.5,8.5c-1.333,0-2.5-0.5-3.5-1.5c-1,1-2.167,1.5-3.5,1.5S11,8,10,7C9,8,7.833,8.5,6.5,8.5S4,8,3,7v11c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V7C20,8,19.167,8.5,20.5,8.5z M7,17H5v-2h2V17z M7,13H5v-2h2V13z M11,17H9v-2h2V17z M11,13H9v-2h2V13z M15,17h-2v-2h2V17z M15,13h-2v-2h2V13z M19,17h-2v-2h2V17z M19,13h-2v-2h2V13z" opacity=".3"/>
-                                        <path d="M3,2v4c1,1,2,1.5,3.5,1.5S9,7,10,6c1,1,2.5,1.5,4,1.5s3-0.5,4-1.5c1,1,2,1.5,3.5,1.5S23,7,24,6V2H3z M19,20H5V9c-1.667,0-3,0.667-4,2v11c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V11c-1,1.333-2.333,2-4,2V20z"/>
-                                    </svg>
-                                </div>
-                            )}
+                            <ProductImage imageName={it.image} alt={it.title} className="w-full h-full object-cover block" />
                             {/* title overlay removed - title is shown in the footer */}
                             <div className="absolute top-2 right-2 bg-white bg-opacity-80 text-sm font-semibold px-2 py-1 rounded">Rs. {it.price.toFixed(2)}</div>
                         </div>

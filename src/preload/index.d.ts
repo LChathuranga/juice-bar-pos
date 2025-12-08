@@ -115,7 +115,9 @@ interface DatabaseAPI {
   resetToDefaults: () => Promise<void>
   
   // Image operations
-  saveProductImage: (imageData: string, filename: string) => Promise<{ success: boolean; filename?: string; error?: string }>
+  saveProductImage: (imageData: string, filename: string) => Promise<{ success: boolean; filename?: string; imagePath?: string; error?: string }>
+  getProductImagePath: (filename: string) => Promise<string | null>
+  getImagesBasePath: () => Promise<string | null>
   
   // Print operations
   printReceipt: (receiptData: {

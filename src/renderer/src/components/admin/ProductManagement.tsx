@@ -2,8 +2,53 @@ import { useState, useEffect } from 'react'
 import { FiEdit2, FiTrash2, FiPlus, FiX } from 'react-icons/fi'
 import { Product, Category } from '../../types'
 
-const getImageUrl = (imageName: string) => {
-  return new URL(`../../assets/images/${imageName}`, import.meta.url).href
+// Cache for image paths
+const imagePathCache: Record<string, string> = {}
+
+// Component to handle async image loading
+function ProductImage({ imageName, alt, className }: { imageName?: string; alt: string; className: string }) {
+  const [src, setSrc] = useState<string>('')
+
+  useEffect(() => {
+    if (!imageName) {
+      setSrc('')
+      return
+    }
+
+    // Check cache first
+    if (imagePathCache[imageName]) {
+      setSrc(imagePathCache[imageName])
+      return
+    }
+
+    // Load image path
+    const loadImage = async () => {
+      // Try production path first
+      const productionPath = await window.api.getProductImagePath(imageName)
+      if (productionPath) {
+        imagePathCache[imageName] = productionPath
+        setSrc(productionPath)
+        return
+      }
+
+      // Fallback to dev path
+      try {
+        const url = new URL(`../../assets/images/${imageName}`, import.meta.url).href
+        imagePathCache[imageName] = url
+        setSrc(url)
+      } catch {
+        setSrc('')
+      }
+    }
+
+    loadImage()
+  }, [imageName])
+
+  if (!src) {
+    return <div className={`${className} bg-gray-200 flex items-center justify-center text-gray-400`}>No Image</div>
+  }
+
+  return <img src={src} alt={alt} className={className} />
 }
 
 export default function ProductManagement() {
@@ -305,7 +350,7 @@ export default function ProductManagement() {
                   <td className="py-3 px-4">
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
                       {product.image ? (
-                        <img src={getImageUrl(product.image)} alt={product.title} className="w-full h-full object-cover" />
+                        <ProductImage imageName={product.image} alt={product.title} className="w-full h-full object-cover" />
                       ) : (
                         <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M20.5,8.5c-1.333,0-2.5-0.5-3.5-1.5c-1,1-2.167,1.5-3.5,1.5S11,8,10,7C9,8,7.833,8.5,6.5,8.5S4,8,3,7v11c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V7C20,8,19.167,8.5,20.5,8.5z M7,17H5v-2h2V17z M7,13H5v-2h2V13z M11,17H9v-2h2V17z M11,13H9v-2h2V13z M15,17h-2v-2h2V17z M15,13h-2v-2h2V13z M19,17h-2v-2h2V17z M19,13h-2v-2h2V13z" opacity=".3"/>
@@ -440,7 +485,7 @@ export default function ProductManagement() {
                       </div>
                     ) : editingProduct && editingProduct.image && !removeImage ? (
                       <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-300">
-                        <img src={getImageUrl(editingProduct.image)} alt="Current" className="w-full h-full object-cover" />
+                        <ProductImage imageName={editingProduct.image} alt="Current" className="w-full h-full object-cover" />
                         <button
                           type="button"
                           onClick={() => setRemoveImage(true)}
