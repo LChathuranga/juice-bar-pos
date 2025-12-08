@@ -255,7 +255,7 @@ body{font-family:'Courier New',monospace;font-size:11px;line-height:1.2;padding:
 </head>
 <body>
 <div class="header">
-<div class="shop-name">${receiptData.shopName || 'JUICE BAR POS'}</div>
+<div class="shop-name">${shopSettings.name || 'JUICE BAR POS'}</div>
 <div class="shop-info">
 ${shopSettings.address ? `<div>${shopSettings.address}</div>` : '<div>Sri Lanka</div>'}
 ${shopSettings.phone ? `<div>Tel: ${shopSettings.phone}</div>` : ''}
